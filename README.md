@@ -12,3 +12,6 @@
 ### Image Thresholding
 1. [OpenCV Image Thresholding](https://docs.opencv.org/4.x/d7/d4d/tutorial_py_thresholding.html)
 2. [OpenCV Thresholding (cv2.threshold)](https://pyimagesearch.com/2021/04/28/opencv-thresholding-cv2-threshold/)
+
+### Miscellaneous
+1. [What is the correct way to change image channel ordering between channels first and channels last?](https://stackoverflow.com/questions/43829711/what-is-the-correct-way-to-change-image-channel-ordering-between-channels-first)
