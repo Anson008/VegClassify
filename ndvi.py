@@ -71,6 +71,7 @@ cc_input = naip_ndvi.astype(np.uint8)
 connectivity = 8  # choose 4-way or 8-way connectivity
 cc_output = cv2.connectedComponentsWithStats(cc_input, connectivity, cv2.CV_32S)
 (num_labels, labels, stats, centroids) = cc_output
+print(f"Number of labels = {num_labels}")
 print(f"Conectivity = {connectivity}")
 print(f"Shape of Statistics: {stats.shape}")
 print(f"Shape of labels: {labels.shape}")
@@ -82,26 +83,9 @@ area_df = pd.DataFrame(stats[:, [cv2.CC_STAT_WIDTH, cv2.CC_STAT_HEIGHT, cv2.CC_S
 area_stats = area_df.describe()
 print(area_stats.round(2))
 
-# Merge connected components information
-cc_info = np.hstack((stats, centroids))
-cc_info_df = pd.DataFrame(cc_info, columns=['LeftMost', 'TopMost', 'Width',
-                                            'Height', 'Area', 'CentroidsX', 'CentroidsY'])
-# Sort by area
-cc_info_df_sorted = cc_info_df.sort_values(by=['Area'])
-
-# Filter out based on width and height
-cc_info_df_filtered = cc_info_df_sorted.loc[(cc_info_df_sorted['Width'] > 10) &
-                                            (cc_info_df_sorted['Height'] > 10) &
-                                            (cc_info_df_sorted['LeftMost'] > 0) &
-                                            (cc_info_df_sorted['TopMost'] > 0)]
-
-# Save to file
-cc_info_df_sorted.to_csv("connected_components_info_all.csv", index=False)
-cc_info_df_filtered.to_csv("connected_components_info_filtered.csv", index=False)
-
 keep_count = 0
 video_frames = []
-size = (0, 0)
+component_masks = dict()
 for i in range(1, num_labels):
     x = stats[i, cv2.CC_STAT_LEFT]
     y = stats[i, cv2.CC_STAT_TOP]
@@ -122,23 +106,48 @@ for i in range(1, num_labels):
         cv2.circle(cc_output, (int(c_x), int(c_y)), 4, (0, 0, 255), -1)
 
         component_mask = (labels == i).astype("uint8") * 255
+        component_masks[i] = component_mask
         component_mask_rgb = cv2.cvtColor(component_mask, cv2.COLOR_GRAY2BGR)
         video_frame = np.hstack((component_mask_rgb, cc_output))
-        # size = (video_frame.shape[1], video_frame.shape[0])
-        # print(video_frame.shape)
         video_frames.append(video_frame)
-        # cv2.imshow("Output", cc_output)
-        # cv2.imshow("Connected Component", component_mask)
-        # cv2.waitKey(0)
 print(f"Kept {keep_count}/{num_labels} connected components")
-# cv2.destroyAllWindows()
 
-if len(video_frames) > 0:
-    size = (video_frames[0].shape[1], video_frames[0].shape[0])
-    video_out = cv2.VideoWriter('cc_video01.avi', cv2.VideoWriter_fourcc(*'MJPG'), 1, size)
+# if len(video_frames) > 0:
+#     size = (video_frames[0].shape[1], video_frames[0].shape[0])
+#     video_out = cv2.VideoWriter('cc_video01.avi', cv2.VideoWriter_fourcc(*'MJPG'), 1, size)
+#
+#     for i in range(len(video_frames)):
+#         video_out.write(video_frames[i])
+#     video_out.release()
 
-    for i in range(len(video_frames)):
-        video_out.write(video_frames[i])
-    video_out.release()
+# Merge connected components information
 
+cc_random_location = np.zeros((len(component_masks), 3))
+for i, (key, value) in enumerate(component_masks.items()):
+    samples = np.where(value == 255)
+    j = np.random.randint(0, len(samples[0]))
+    cc_random_location[i, 0] = key
+    cc_random_location[i, 1] = samples[1][j]  # Column index: x or width
+    cc_random_location[i, 2] = samples[0][j]  # Row index: y or height
+
+cc_random_location_df = pd.DataFrame(cc_random_location, columns=['Label', 'randLocX', 'randLocY'])
+cc_labels = np.arange(num_labels).reshape((num_labels, 1))
+cc_info = np.hstack((cc_labels, stats, centroids))
+cc_info_df = pd.DataFrame(cc_info, columns=['Label', 'LeftMost', 'TopMost', 'Width',
+                                            'Height', 'Area', 'CentroidsX', 'CentroidsY'])
+
+cc_info_df = cc_info_df.set_index('Label').join(cc_random_location_df.set_index('Label'), how='inner')
+
+# Sort by area
+cc_info_df_sorted = cc_info_df.sort_values(by=['Area'])
+
+# Filter out based on width and height
+cc_info_df_filtered = cc_info_df_sorted.loc[(cc_info_df_sorted['Width'] > 10) &
+                                            (cc_info_df_sorted['Height'] > 10) &
+                                            (cc_info_df_sorted['LeftMost'] > 0) &
+                                            (cc_info_df_sorted['TopMost'] > 0)]
+
+# Save to file
+cc_info_df_sorted.to_csv("connected_components_info_all_01.csv", index=False)
+cc_info_df_filtered.to_csv("connected_components_info_filtered_01.csv", index=False)
 
