@@ -23,6 +23,13 @@
 2. [Add lat and lon to DataArray read in by rioxarray](https://gis.stackexchange.com/questions/443801/add-lat-and-lon-to-dataarray-read-in-by-rioxarray)
 3. [How to find coordinates of pixels of a GeoTIFF image with Python](https://gis.stackexchange.com/questions/394455/how-to-find-coordinates-of-pixels-of-a-geotiff-image-with-python)
 
+### Morphological Operations
+1. [Understanding Morphological Image Processing and Its Operations](https://towardsdatascience.com/understanding-morphological-image-processing-and-its-operations-7bcf1ed11756)
+2. [Python OpenCV – Morphological Operations](https://www.geeksforgeeks.org/python-opencv-morphological-operations/#)
+
+### Design Patterns
+1. [Design Patterns - Filter Pattern](https://www.tutorialspoint.com/design_pattern/filter_pattern.htm)
+
 ### Miscellaneous
 1. [What is the correct way to change image channel ordering between channels first and channels last?](https://stackoverflow.com/questions/43829711/what-is-the-correct-way-to-change-image-channel-ordering-between-channels-first)
 2. [How to take website screenshots in Python](https://screenshotone.com/blog/how-to-take-website-screenshots-in-python/)
