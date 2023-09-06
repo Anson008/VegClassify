@@ -5,53 +5,105 @@ import matplotlib.pyplot as plt
 from naip_processor import NAIPProcessor
 
 
-class ConnectedComponent:
+class ConnectedComponents:
+    def __init__(self, cc_result):
+        self.__num_labels = cc_result[0]
+        self.__labels = cc_result[1]
+        self.__stats = cc_result[2]
+        self.__centroids = cc_result[3]
+
+    @property
+    def num_labels(self):
+        return self.__num_labels
+
+    @property
+    def labels(self):
+        return self.__labels
+
+    @property
+    def stats(self):
+        return self.__stats
+
+    @property
+    def centroids(self):
+        return self.__centroids
+
+
+class ConnectedComponentsAnalyser:
+    def __init__(self, cc_input, connectivity=8):
+        self._cc_input = cc_input
+        self._connectivity = connectivity
+        output = cv2.connectedComponentsWithStats(self._cc_input.astype(np.uint8),
+                                                  self._connectivity,
+                                                  cv2.CV_32S)
+        self._cc_result = ConnectedComponents(output)
+
+    @property
+    def cc_input(self):
+        return self._cc_input
+
+    @cc_input.setter
+    def cc_input(self, cc_input):
+        self._cc_input = cc_input
+
+    @property
+    def connectivity(self):
+        return self._connectivity
+
+    @connectivity.setter
+    def connectivity(self, value):
+        self._connectivity = value
+
+    @property
+    def cc_result(self):
+        return self._cc_result
+
+    def update_cc_result(self):
+        output = cv2.connectedComponentsWithStats(self._cc_input.astype(np.uint8),
+                                                  self._connectivity,
+                                                  cv2.CV_32S)
+        self._cc_result = ConnectedComponents(output)
+
     @staticmethod
     def generate_components(cc_input, connectivity):
         return cv2.connectedComponentsWithStats(cc_input.astype(np.uint8),
                                                 connectivity,
                                                 cv2.CV_32S)
-    @staticmethod
-    def summary_statistics(cc_output):
-        (num_labels, labels, stats, centroids) = cc_output
-        area_df = pd.DataFrame(stats[:, [cv2.CC_STAT_WIDTH, cv2.CC_STAT_HEIGHT, cv2.CC_STAT_AREA]],
-                               columns=['Width', 'Height', 'Area'])
-        area_stats = area_df.describe()
-        return area_stats
 
-    @staticmethod
-    def make_cc_mask(cc_output, width_filter=0, height_filter=0):
-        (num_labels, labels, stats, centroids) = cc_output
+    def summary_statistics(self):
+        dimension_df = pd.DataFrame(self._cc_result.stats[:, [cv2.CC_STAT_WIDTH, cv2.CC_STAT_HEIGHT, cv2.CC_STAT_AREA]],
+                                    columns=['Width', 'Height', 'Area'])
+        res = dimension_df.describe()
+        return res
+
+    def make_cc_mask(self, width_filter=0, height_filter=0):
         keep_count = 0
         component_masks = dict()  # key: label; value: mask value
-        for i in range(1, num_labels):
-            w = stats[i, cv2.CC_STAT_WIDTH]
-            h = stats[i, cv2.CC_STAT_HEIGHT]
+        for i in range(1, self._cc_result.num_labels):
+            w = self._cc_result.stats[i, cv2.CC_STAT_WIDTH]
+            h = self._cc_result.stats[i, cv2.CC_STAT_HEIGHT]
 
             keep_w = w >= width_filter
             keep_h = h >= height_filter
 
             if all((keep_w, keep_h)):
                 keep_count += 1
-                component_mask = (labels == i).astype("unit8") * 255
+                component_mask = (self._cc_result.labels == i).astype("unit8") * 255
                 component_masks[i] = component_mask
         return component_masks
 
-    @staticmethod
-    def visualize_cc(cc_output, naip_rgb):
-        (num_labels, labels, stats, centroids) = cc_output
+    def visualize_cc(self, naip_rgb):
+
         width_filter = 3
         height_filter = 3
         keep_count = 0
         cc_masks = dict()  # key: label; value: numpy array of mask values
         frames = []
-        for i in range(1, num_labels):
-            x = stats[i, cv2.CC_STAT_LEFT]
-            y = stats[i, cv2.CC_STAT_TOP]
-            w = stats[i, cv2.CC_STAT_WIDTH]
-            h = stats[i, cv2.CC_STAT_HEIGHT]
-            area = stats[i, cv2.CC_STAT_AREA]
-            (c_x, c_y) = centroids[i]
+        for i in range(1, self._cc_result.num_labels):
+            w = self._cc_result.stats[i, cv2.CC_STAT_WIDTH]
+            h = self._cc_result.stats[i, cv2.CC_STAT_HEIGHT]
+            area = self._cc_result.stats[i, cv2.CC_STAT_AREA]
+            (c_x, c_y) = self._cc_result.centroids[i]
 
             keep_w = w >= width_filter
             keep_h = h >= height_filter
@@ -59,16 +111,13 @@ class ConnectedComponent:
             if all((keep_w, keep_h)):
                 keep_count += 1
                 background = naip_rgb.copy()
-                # cv2.rectangle(background, (x, y), (x + w, y + h), (0, 255, 0), 1)
                 cv2.circle(background, (int(c_x), int(c_y)), 2, (0, 0, 255), -1)
 
-                cc_mask = (labels == i).astype("uint8") * 255
-                cc_mask_eroded = ConnectedComponent.erode(cc_mask)
+                cc_mask = (self._cc_result.labels == i).astype("uint8") * 255
+                cc_mask_eroded = ConnectedComponentsAnalyser.erode(cc_mask)
                 cc_mask_rgb = cv2.cvtColor(cc_mask_eroded, cv2.COLOR_GRAY2BGR)
-                cc_mask_rgb[:, :, 0][cc_mask_rgb[:, :, 0] == 255] = 0
-                cc_mask_rgb[:, :, 2][cc_mask_rgb[:, :, 2] == 255] = 0
-                # cc_mask_rgb[:, :, 0] = 0
-                # cc_mask_rgb[:, :, 2] = 0
+                cc_mask_rgb[:, :, 0][cc_mask_rgb[:, :, 0] == 255] = 0  # Set blue channel to 0
+                cc_mask_rgb[:, :, 2][cc_mask_rgb[:, :, 2] == 255] = 0  # Set red channel to 0
                 # cv2.imshow("Test", cc_mask_rgb)
                 # cv2.waitKey(0)
                 # cv2.destroyWindow("Test")
@@ -132,12 +181,12 @@ if __name__ == "__main__":
     naip_reprojected = naip.reproject("EPSG:4326")
     ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
     ndvi_classified = NAIPProcessor.classify(ndvi, 0.2)
-    cc_output = ConnectedComponent.generate_components(ndvi_classified, 8)
+    cc_analyser = ConnectedComponentsAnalyser(ndvi_classified, 8)
 
-    area_stats = ConnectedComponent.summary_statistics(cc_output)
+    area_stats = cc_analyser.summary_statistics()
     # print(area_stats.round(2))
 
-    cc_masks, frames = ConnectedComponent.visualize_cc(cc_output, naip_rgb)
+    cc_masks, frames = cc_analyser.visualize_cc(naip_rgb)
     print(len(cc_masks))
-    ConnectedComponent.make_video(frames, "./results/cc_video02.avi")
+    ConnectedComponentsAnalyser.make_video(frames, "./results/cc_video_eroded.avi")
 
