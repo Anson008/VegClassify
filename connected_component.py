@@ -193,10 +193,10 @@ if __name__ == "__main__":
     random_locations = cc_analyser.generate_rondom_locations(naip_reprojected, 0.01)
     with open("./results/random_locations.txt", "w") as file_handler:
         file_handler.write(json.dumps(random_locations))
-    # for key, value in random_locations.items():
-    #     print(f"Random locations for the {key}th component:\n")
-    #     for (lon, lat) in value:
-    #         print(f"Lon: {lon:.6f}; Lat: {lat:.6f}\n")
+    for key, value in random_locations.items():
+        print(f"Random locations for the {key}th component:\n")
+        for (lon, lat) in value:
+            print(f"Lon: {lon:.6f}; Lat: {lat:.6f}\n")
 
     # cc_masks, frames = cc_analyser.visualize_cc(naip_rgb)
     # ConnectedComponentsAnalyser.make_video(frames, "./results/cc_video_eroded.avi")
