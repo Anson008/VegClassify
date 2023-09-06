@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import pandas as pd
+import math
+import json
 import matplotlib.pyplot as plt
 from naip_processor import NAIPProcessor
 
@@ -148,17 +150,19 @@ class ConnectedComponentsAnalyser:
                 video_out.write(frames[i])
             video_out.release()
 
-    @staticmethod
-    def generate_rondom_locations(naip_img, component_masks):
-        cc_random_location = np.zeros((len(component_masks), 3))
-        for i, (key, value) in enumerate(component_masks.items()):
-            samples = np.where(value == 255)
-            j = np.random.randint(0, len(samples[0]))  # Randomly select a location where the mask value is 255
-            cc_random_location[i, 0] = key
-            lon = naip_img[0, samples[0][j], samples[1][j]].x.values  # samples[0]: y or height; samples[1]: x or width
-            lat = naip_img[0, samples[0][j], samples[1][j]].y.values
-            cc_random_location[i, 1] = lon
-            cc_random_location[i, 2] = lat
+    def generate_rondom_locations(self, naip_img, sample_rate):
+        cc_random_location = dict()
+        for i in range(1, self._cc_result.num_labels):
+            samples = np.where(self._cc_result.labels == i)
+
+            # Randomly select a location where the mask value is 255
+            num_pixels = samples[0].shape[0]
+            sample_index = np.random.choice(np.arange(num_pixels), size=math.ceil(num_pixels * sample_rate))
+            for j in list(sample_index):
+                lon = naip_img[0, samples[0][j], samples[1][j]].x.values.item()  # samples[0]: y or height; samples[1]: x or width
+                lat = naip_img[0, samples[0][j], samples[1][j]].y.values.item()
+                # print("lat type:", type(lat))
+                cc_random_location.setdefault(i, []).append((lon, lat))
 
         return cc_random_location
 
@@ -186,7 +190,14 @@ if __name__ == "__main__":
     area_stats = cc_analyser.summary_statistics()
     # print(area_stats.round(2))
 
-    cc_masks, frames = cc_analyser.visualize_cc(naip_rgb)
-    print(len(cc_masks))
-    ConnectedComponentsAnalyser.make_video(frames, "./results/cc_video_eroded.avi")
+    random_locations = cc_analyser.generate_rondom_locations(naip_reprojected, 0.01)
+    with open("./results/random_locations.txt", "w") as file_handler:
+        file_handler.write(json.dumps(random_locations))
+    # for key, value in random_locations.items():
+    #     print(f"Random locations for the {key}th component:\n")
+    #     for (lon, lat) in value:
+    #         print(f"Lon: {lon:.6f}; Lat: {lat:.6f}\n")
+
+    # cc_masks, frames = cc_analyser.visualize_cc(naip_rgb)
+    # ConnectedComponentsAnalyser.make_video(frames, "./results/cc_video_eroded.avi")
 
