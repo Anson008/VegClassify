@@ -35,5 +35,5 @@
 2. [How to take website screenshots in Python](https://screenshotone.com/blog/how-to-take-website-screenshots-in-python/)
 3. [ScreenshotOne Documentation](https://screenshotone.com/docs/getting-started/)
 4. [EarthPy Documentation](https://earthpy.readthedocs.io/en/latest/index.html)
-
+5. [What are the ranges to recognize different colors in RGB space?](https://stackoverflow.com/questions/42882498/what-are-the-ranges-to-recognize-different-colors-in-rgb-space)
 
