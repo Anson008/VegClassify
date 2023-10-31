@@ -26,14 +26,14 @@ class GreaterThanOrEqualToCriteria(CriteriaBase):
         labels = []
         stats = []
         centroids = []
-        for i in range(1, connected_component.num_labels):
+        for i in range(connected_component.num_labels):
             param = connected_component.stats[i, cv2_param]
             if param >= self._target:
-                label = connected_component.labels[i]
-                label[label == i] = num_labels
+                label = connected_component.labels[i, :, :]
+                label[label == i + 1] = i + 1
                 labels.append(label)
-                stats.append(connected_component.stats[i])
-                centroids.append(connected_component.centroids[i])
+                stats.append(connected_component.stats[i, :])
+                centroids.append(connected_component.centroids[i, :])
                 num_labels += 1
         labels = np.array(labels)
         stats = np.array(stats)
@@ -48,11 +48,11 @@ class GreaterThanCriteria(CriteriaBase):
         labels = []
         stats = []
         centroids = []
-        for i in range(1, connected_component.num_labels):
+        for i in range(connected_component.num_labels):
             param = connected_component.stats[i, cv2_param]
             if param > self._target:
-                label = connected_component.labels[i]
-                label[label == i] = num_labels
+                label = connected_component.labels[i, :, :]
+                label[label == i + 1] = i + 1
                 labels.append(label)
                 stats.append(connected_component.stats[i])
                 centroids.append(connected_component.centroids[i])
@@ -70,11 +70,11 @@ class LessThanOrEqualToCriteria(CriteriaBase):
         labels = []
         stats = []
         centroids = []
-        for i in range(1, connected_component.num_labels):
+        for i in range(connected_component.num_labels):
             param = connected_component.stats[i, cv2_param]
             if param <= self._target:
-                label = connected_component.labels[i]
-                label[label == i] = num_labels
+                label = connected_component.labels[i, :, :]
+                label[label == i + 1] = i + 1
                 labels.append(label)
                 stats.append(connected_component.stats[i])
                 centroids.append(connected_component.centroids[i])
@@ -92,11 +92,11 @@ class LessThanCriteria(CriteriaBase):
         labels = []
         stats = []
         centroids = []
-        for i in range(1, connected_component.num_labels):
+        for i in range(connected_component.num_labels):
             param = connected_component.stats[i, cv2_param]
             if param < self._target:
-                label = connected_component.labels[i]
-                label[label == i] = num_labels
+                label = connected_component.labels[i, :, :]
+                label[label == i + 1] = i + 1
                 labels.append(label)
                 stats.append(connected_component.stats[i])
                 centroids.append(connected_component.centroids[i])
@@ -114,11 +114,11 @@ class EqualToCriteria(CriteriaBase):
         labels = []
         stats = []
         centroids = []
-        for i in range(1, connected_component.num_labels):
+        for i in range(connected_component.num_labels):
             param = connected_component.stats[i, cv2_param]
             if param == self._target:
-                label = connected_component.labels[i]
-                label[label == i] = num_labels
+                label = connected_component.labels[i, :, :]
+                label[label == i + 1] = i + 1
                 labels.append(label)
                 stats.append(connected_component.stats[i])
                 centroids.append(connected_component.centroids[i])
@@ -136,11 +136,11 @@ class NotEqualToCriteria(CriteriaBase):
         labels = []
         stats = []
         centroids = []
-        for i in range(1, connected_component.num_labels):
+        for i in range(connected_component.num_labels):
             param = connected_component.stats[i, cv2_param]
             if param != self._target:
-                label = connected_component.labels[i]
-                label[label == i] = num_labels
+                label = connected_component.labels[i, :, :]
+                label[label == i + 1] = i + 1
                 labels.append(label)
                 stats.append(connected_component.stats[i])
                 centroids.append(connected_component.centroids[i])

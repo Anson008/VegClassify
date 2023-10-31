@@ -67,9 +67,42 @@ class CV2ConnectedComponentsGenerator:
         self._connectivity = value
 
     def generate(self):
-        return cv2.connectedComponentsWithStats(self._cc_input.astype(np.uint8),
-                                                self._connectivity,
-                                                cv2.CV_32S)
+        res = cv2.connectedComponentsWithStats(self._cc_input.astype(np.uint8),
+                                               self._connectivity,
+                                               cv2.CV_32S)
+        return self.__remove_background(res)
+
+    def __remove_background(self, cc_res):
+        """
+
+        :param cc_res: tuple, OpenCV connected component results
+        :return: tuple, connected component results without background. "labels" is reshaped to (index, width, height)
+        """
+        (num_labels, labels, stats, centroids) = cc_res
+        # print("*"*20)
+        # print("Shape before transform:")
+        # print("Shape of labels:", labels.shape)
+        # print("Shape of stats:", stats.shape)
+        # print("Shape of centroids:", centroids.shape)
+        new_labels = []
+        new_stats = []
+        new_centroids = []
+        count = 0
+        for i in range(1, num_labels):
+            label = (labels == i).astype(np.intc) * i
+            new_labels.append(label)
+            new_stats.append(stats[i])
+            new_centroids.append(centroids[i])
+            count += 1
+        new_labels = np.array(new_labels)
+        new_stats = np.array(new_stats)
+        new_centroids = np.array(new_centroids)
+        # print("-"*20)
+        # print("Shape after transform:")
+        # print("Shape of labels:", new_labels.shape)
+        # print("Shape of stats:", new_stats.shape)
+        # print("Shape of centroids:", new_centroids.shape)
+        return count, new_labels, new_stats, new_centroids
 
 
 class ConnectedComponentsProcessor:
@@ -77,9 +110,11 @@ class ConnectedComponentsProcessor:
     @staticmethod
     def make_mask(cc_object):
         component_masks = dict()  # key: label; value: mask value
-        combined_mask = np.zeros(cc_object.labels.shape, dtype='bool_')
-        for i in range(1, cc_object.num_labels):
-            component_mask = (cc_object.labels == i)
+        combined_mask = np.zeros(cc_object.labels[0].shape, dtype='bool_')
+        for i in range(cc_object.num_labels):
+            component_mask = (cc_object.labels[i] == i + 1)
+            if i == 0:
+                print(np.sum(component_mask))
             combined_mask = np.ma.mask_or(combined_mask, component_mask)
             component_masks[i] = component_mask.astype("uint8") * 255
         return component_masks, combined_mask.astype("uint8") * 255
@@ -191,7 +226,7 @@ if __name__ == "__main__":
     naip_rgb = naip.get_rgb_naip()
     naip_reprojected = naip.reproject("EPSG:4326")
     ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
-    ndvi_classified = NAIPProcessor.classify(ndvi, 0.11, invert=True)
+    ndvi_classified = NAIPProcessor.classify(ndvi, 0.11, invert=False)
     cv2_cc_generator = CV2ConnectedComponentsGenerator(ndvi_classified, 8)
     cc_results = cv2_cc_generator.generate()
 
@@ -199,14 +234,13 @@ if __name__ == "__main__":
     # area_stats = cc_object.summary_statistics()
     # print(area_stats.round(2))
 
-    geo_loc = ConnectedComponentsProcessor.generate_random_locations(cc_object, naip_reprojected)
-    ConnectedComponentsProcessor.save_to_json(geo_loc, "./results/random_geo_locations.json")
+    # geo_loc = ConnectedComponentsProcessor.generate_random_locations(cc_object, naip_reprojected)
+    # ConnectedComponentsProcessor.save_to_json(geo_loc, "./results/random_geo_locations.json")
 
-    # cc_masks, frames = cc_object.visualize_cc(naip_rgb)
-    # masks, combined_mask = ConnectedComponentsProcessor.make_mask(cc_object)
+    masks, combined_mask = ConnectedComponentsProcessor.make_mask(cc_object)
     # # print(len(masks))
-    # frames = ConnectedComponentsProcessor.overlap_on_map(combined_mask, naip_rgb, "red", True)
+    frames = ConnectedComponentsProcessor.overlap_on_map(combined_mask, naip_rgb, "red", True)
     # # CV2ConnectedComponentsGenerator.make_video(frames, "./results/cc_video_area_test.avi")
     # frames = ConnectedComponentsProcessor.mark_cc_on_map(cc_object, naip_rgb, 25)
-    # cv2.imwrite("./results/overlap_test8.png", frames)
+    cv2.imwrite("./results/overlap_test9.png", frames)
 
