@@ -8,6 +8,9 @@ from bs4 import BeautifulSoup
 import re
 import pyscreenshot as imagegrab
 import time
+import utilities
+from utilities import Point
+
 
 # Specify Chrome driver path
 options = Options()
@@ -52,10 +55,21 @@ for key, value in date_to_release_num.items():
 # Wait until the page is fully loaded
 WebDriverWait(driver, 10).until(lambda driver1: driver1.execute_script('return document.readyState') == 'complete')
 
+screen_w, screen_h = utilities.get_screen_resolution()
+nav_width = 350
+browser_header_size = 100
+center = Point(screen_w // 2 + nav_width, screen_h // 2 + browser_header_size)
+shift = Point(100, 60)
+
+top_left = Point(center.x - shift.x, center.y - shift.y)
+bottom_right = Point(center.x + shift.x, center.y + shift.y)
+
+# print(driver.get_window_size())
 # Take a screenshot of the region of interest
-im = imagegrab.grab(bbox=(700, 150, 3840, 2160))
+# im = imagegrab.grab(bbox=(700, 150, 3840, 2160))
+im = imagegrab.grab(bbox=(top_left.x, top_left.y, bottom_right.x, bottom_right.y))
 im.show()
-# im.save("./results/world_imagery_screenshot.png")
+im.save("./results/world_imagery_screenshot_100_60.png")
 
 # driver.save_screenshot("world_imagery_shot.png")
 # driver.close()
