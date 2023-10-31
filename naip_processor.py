@@ -4,7 +4,6 @@ import earthpy.spatial as es
 import earthpy.plot as ep
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 
 
 class NAIPProcessor:
@@ -75,7 +74,7 @@ class NAIPProcessor:
         return es.normalized_diff(naip_data[3], naip_data[0])
 
     @staticmethod
-    def classify(ndvi, threshold):
+    def classify(ndvi, threshold, invert=False):
         """
         :param ndvi: numpy array, NDVI values for an image
         :param threshold: float, the value to distinguish green space and non-green space
@@ -83,6 +82,8 @@ class NAIPProcessor:
         """
         ndvi[ndvi >= threshold] = 1
         ndvi[ndvi < threshold] = 0
+        if invert:
+            ndvi = np.invert(ndvi.astype(np.bool_)).astype(np.uint8)
         return ndvi
 
     @staticmethod
@@ -104,12 +105,18 @@ class NAIPProcessor:
 
 
 if __name__ == "__main__":
-    img_path = "./image/m_4111118_nw_12_060_20210813_Clip.tif"
+    # img_path = "./image/m_4111118_nw_12_060_20210813_Clip.tif"
+    # naip = NAIPProcessor()
+    # naip.naip_img = img_path
+    # naip_rgb = naip.get_rgb_naip()
+    # # NAIPProcessor.show_image("RGB", naip_rgb)
+    # naip_reprojected = naip.reproject("EPSG:4326")
+    # ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
+    # ndvi_classified = NAIPProcessor.classify(ndvi, 0.1)
+    # NAIPProcessor.plot_bands(ndvi_classified, "PiYG", title="NDVI")
+
+    path = "C:\\Users\\xczha\\Downloads\\775.jfif"
     naip = NAIPProcessor()
-    naip.naip_img = img_path
-    naip_rgb = naip.get_rgb_naip()
-    NAIPProcessor.show_image("RGB", naip_rgb)
-    naip_reprojected = naip.reproject("EPSG:4326")
-    ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
-    ndvi_classified = NAIPProcessor.classify(ndvi, 0.2)
-    NAIPProcessor.plot_bands(ndvi_classified, "PiYG", title="NDVI")
+    naip.naip_img = path
+    img = naip.naip_img
+    print(type(img))
