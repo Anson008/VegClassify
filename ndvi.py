@@ -1,7 +1,5 @@
 import cv2
 import rioxarray as rxr
-import geopandas as gpd
-import earthpy as et
 import earthpy.spatial as es
 import earthpy.plot as ep
 import numpy as np
@@ -17,7 +15,6 @@ print("NAIP image shape: ", naip_img.shape)
 # Reproject NAIP to EPSG:4326
 num_bands, height, width = naip_img.shape
 naip_reproj = naip_img.rio.reproject("EPSG:4326", shape=(height, width))
-
 
 # Convert xarray.DataArray to numpy array
 naip_reproj_arr = naip_reproj.values
@@ -69,7 +66,19 @@ plt.show()
 # plt.show()
 
 # Convert dtype to uint8
+naip_ndvi = np.invert(naip_ndvi.astype(np.bool_))
+print("boolean ndvi:\n", naip_ndvi)
+
 cc_input = naip_ndvi.astype(np.uint8)
+
+ep.plot_bands(cc_input,
+              cmap='PiYG',
+              scale=False,
+              vmin=-1, vmax=1,
+              title="NDVI")
+
+# plt.savefig("./image/ndvi/ndvi_map.png", dpi=300, format="png")
+plt.show()
 
 # Input cv2.connectedComponentsWithStats() must be 8-bit single-channel image
 connectivity = 8  # choose 4-way or 8-way connectivity
@@ -87,12 +96,12 @@ area_df = pd.DataFrame(stats[:, [cv2.CC_STAT_WIDTH, cv2.CC_STAT_HEIGHT, cv2.CC_S
 area_stats = area_df.describe()
 print(area_stats.round(2))
 
-width_filter = 3
-height_filter = 3
+width_filter = 0
+height_filter = 0
 keep_count = 0
 video_frames = []
 component_masks = dict()  # key: label; value: mask value
-for i in range(1, num_labels):
+for i in range(0, num_labels):
     x = stats[i, cv2.CC_STAT_LEFT]
     y = stats[i, cv2.CC_STAT_TOP]
     w = stats[i, cv2.CC_STAT_WIDTH]
@@ -120,7 +129,7 @@ print(f"Kept {keep_count}/{num_labels} connected components")
 
 # if len(video_frames) > 0:
 #     size = (video_frames[0].shape[1], video_frames[0].shape[0])
-#     video_out = cv2.VideoWriter('cc_video01.avi', cv2.VideoWriter_fourcc(*'MJPG'), 1, size)
+#     video_out = cv2.VideoWriter('cc_video_inverted_connected_components.avi', cv2.VideoWriter_fourcc(*'MJPG'), 1, size)
 #
 #     for i in range(len(video_frames)):
 #         video_out.write(video_frames[i])
@@ -150,18 +159,19 @@ cc_info_df['TopLeftLat'] = naip_reproj[0, stats[:, cv2.CC_STAT_TOP], stats[:, cv
 cc_info_df_sorted = cc_info_df.sort_values(by=['Area'])
 
 cc_info_random_pos_df = cc_info_df.set_index('Label').join(cc_random_location_df.set_index('Label'), how='inner')
+print(cc_info_random_pos_df.head())
 
 # Sort by area
 cc_info_random_pos_df_sorted = cc_info_random_pos_df.sort_values(by=['Area'])
 
 # Filter out based on width and height
 cc_info_random_pos_df_filtered = cc_info_random_pos_df_sorted.loc[
-    (cc_info_random_pos_df_sorted['Width'] >= width_filter) &
-    (cc_info_random_pos_df_sorted['Height'] >= height_filter) &
+    (cc_info_random_pos_df_sorted['Width'] >= 3) &
+    (cc_info_random_pos_df_sorted['Height'] >= 3) &
     (cc_info_random_pos_df_sorted['LeftMost'] > 0) &
     (cc_info_random_pos_df_sorted['TopMost'] > 0)]
 
 # Save to file
-cc_info_df_sorted.to_csv("connected_components_info_all_03.csv", index=False)
-cc_info_random_pos_df_filtered.to_csv("connected_components_info_filtered_03.csv", index=False)
+# cc_info_random_pos_df_sorted.to_csv("connected_components_info_inverted_all_with_label.csv", index=True)
+# cc_info_random_pos_df_filtered.to_csv("connected_components_info_inverted_filtered_with_label.csv", index=True)
 
