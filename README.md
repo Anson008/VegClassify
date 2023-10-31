@@ -36,4 +36,4 @@
 3. [ScreenshotOne Documentation](https://screenshotone.com/docs/getting-started/)
 4. [EarthPy Documentation](https://earthpy.readthedocs.io/en/latest/index.html)
 5. [What are the ranges to recognize different colors in RGB space?](https://stackoverflow.com/questions/42882498/what-are-the-ranges-to-recognize-different-colors-in-rgb-space)
-
+6. [Getting Display resolution with python isn't accurate](https://stackoverflow.com/questions/73268410/getting-display-resolution-with-python-isnt-accurate)
