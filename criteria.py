@@ -1,6 +1,6 @@
 import cv2
 from abc import ABC, abstractmethod
-from connected_component import ConnectedComponents, NativeConnectedComponentsGenerator
+from connected_components import ConnectedComponents, CV2ConnectedComponentsGenerator
 from naip_processor import NAIPProcessor
 import numpy as np
 
@@ -15,24 +15,26 @@ class CriteriaBase(ABC):
         self._target = target
 
     @abstractmethod
-    def filter(self, connected_component):
+    def apply(self, connected_component):
         pass
 
 
 class GreaterThanOrEqualToCriteria(CriteriaBase):
-    def filter(self, connected_component):
+    def apply(self, connected_component):
         cv2_param = self.param_dict[self._param_name]
         num_labels = 0
         labels = []
         stats = []
         centroids = []
-        for i in range(connected_component.num_labels):
+        for i in range(1, connected_component.num_labels):
             param = connected_component.stats[i, cv2_param]
             if param >= self._target:
-                num_labels += 1
-                labels.append(connected_component.labels[i])
+                label = connected_component.labels[i]
+                label[label == i] = num_labels
+                labels.append(label)
                 stats.append(connected_component.stats[i])
                 centroids.append(connected_component.centroids[i])
+                num_labels += 1
         labels = np.array(labels)
         stats = np.array(stats)
         centroids = np.array(centroids)
@@ -40,19 +42,21 @@ class GreaterThanOrEqualToCriteria(CriteriaBase):
 
 
 class GreaterThanCriteria(CriteriaBase):
-    def filter(self, connected_component):
+    def apply(self, connected_component):
         cv2_param = self.param_dict[self._param_name]
         num_labels = 0
         labels = []
         stats = []
         centroids = []
-        for i in range(connected_component.num_labels):
+        for i in range(1, connected_component.num_labels):
             param = connected_component.stats[i, cv2_param]
             if param > self._target:
-                num_labels += 1
-                labels.append(connected_component.labels[i])
+                label = connected_component.labels[i]
+                label[label == i] = num_labels
+                labels.append(label)
                 stats.append(connected_component.stats[i])
                 centroids.append(connected_component.centroids[i])
+                num_labels += 1
         labels = np.array(labels)
         stats = np.array(stats)
         centroids = np.array(centroids)
@@ -60,19 +64,21 @@ class GreaterThanCriteria(CriteriaBase):
 
 
 class LessThanOrEqualToCriteria(CriteriaBase):
-    def filter(self, connected_component):
+    def apply(self, connected_component):
         cv2_param = self.param_dict[self._param_name]
         num_labels = 0
         labels = []
         stats = []
         centroids = []
-        for i in range(connected_component.num_labels):
+        for i in range(1, connected_component.num_labels):
             param = connected_component.stats[i, cv2_param]
             if param <= self._target:
-                num_labels += 1
-                labels.append(connected_component.labels[i])
+                label = connected_component.labels[i]
+                label[label == i] = num_labels
+                labels.append(label)
                 stats.append(connected_component.stats[i])
                 centroids.append(connected_component.centroids[i])
+                num_labels += 1
         labels = np.array(labels)
         stats = np.array(stats)
         centroids = np.array(centroids)
@@ -80,19 +86,65 @@ class LessThanOrEqualToCriteria(CriteriaBase):
 
 
 class LessThanCriteria(CriteriaBase):
-    def filter(self, connected_component):
+    def apply(self, connected_component):
         cv2_param = self.param_dict[self._param_name]
         num_labels = 0
         labels = []
         stats = []
         centroids = []
-        for i in range(connected_component.num_labels):
+        for i in range(1, connected_component.num_labels):
             param = connected_component.stats[i, cv2_param]
             if param < self._target:
-                num_labels += 1
-                labels.append(connected_component.labels[i])
+                label = connected_component.labels[i]
+                label[label == i] = num_labels
+                labels.append(label)
                 stats.append(connected_component.stats[i])
                 centroids.append(connected_component.centroids[i])
+                num_labels += 1
+        labels = np.array(labels)
+        stats = np.array(stats)
+        centroids = np.array(centroids)
+        return ConnectedComponents((num_labels, labels, stats, centroids))
+
+
+class EqualToCriteria(CriteriaBase):
+    def apply(self, connected_component):
+        cv2_param = self.param_dict[self._param_name]
+        num_labels = 0
+        labels = []
+        stats = []
+        centroids = []
+        for i in range(1, connected_component.num_labels):
+            param = connected_component.stats[i, cv2_param]
+            if param == self._target:
+                label = connected_component.labels[i]
+                label[label == i] = num_labels
+                labels.append(label)
+                stats.append(connected_component.stats[i])
+                centroids.append(connected_component.centroids[i])
+                num_labels += 1
+        labels = np.array(labels)
+        stats = np.array(stats)
+        centroids = np.array(centroids)
+        return ConnectedComponents((num_labels, labels, stats, centroids))
+
+
+class NotEqualToCriteria(CriteriaBase):
+    def apply(self, connected_component):
+        cv2_param = self.param_dict[self._param_name]
+        num_labels = 0
+        labels = []
+        stats = []
+        centroids = []
+        for i in range(1, connected_component.num_labels):
+            param = connected_component.stats[i, cv2_param]
+            if param != self._target:
+                label = connected_component.labels[i]
+                label[label == i] = num_labels
+                labels.append(label)
+                stats.append(connected_component.stats[i])
+                centroids.append(connected_component.centroids[i])
+                num_labels += 1
         labels = np.array(labels)
         stats = np.array(stats)
         centroids = np.array(centroids)
@@ -106,8 +158,8 @@ class AndCriteria:
         self._criteria2 = criteria2
 
     def apply_criteria(self, cc_result):
-        temp = self._criteria1.filter(cc_result)
-        return self._criteria2.filter(temp)
+        temp = self._criteria1.apply(cc_result)
+        return self._criteria2.apply(temp)
 
 
 if __name__ == "__main__":
@@ -117,14 +169,14 @@ if __name__ == "__main__":
     naip_reprojected = naip.reproject("EPSG:4326")
     ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
     ndvi_classified = NAIPProcessor.classify(ndvi, 0.11)
-    cc_generator = NativeConnectedComponentsGenerator(ndvi_classified, 8)
+    cc_generator = CV2ConnectedComponentsGenerator(ndvi_classified, 8)
     cc_res = cc_generator.generate()
     cc_obj = ConnectedComponents(cc_res)
     area_stats = cc_obj.summary_statistics()
     # print(area_stats.round(2))
 
     not_less_than = GreaterThanOrEqualToCriteria("area", 100)
-    cc_area_gteq_100 = not_less_than.filter(cc_obj)
+    cc_area_gteq_100 = not_less_than.apply(cc_obj)
     filtered_stats = cc_area_gteq_100.summary_statistics()
     print(filtered_stats)
 
