@@ -14,15 +14,18 @@ from utilities import Point
 
 # Specify Chrome driver path
 options = Options()
+options.add_experimental_option("excludeSwitches", ["enable-automation"])
 options.binary_location = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
 
 # Start Chrome
-driver = webdriver.Chrome()
-driver.maximize_window()
+driver = webdriver.Chrome(options=options)
+# driver.maximize_window()
 
 # Load the target webpage
 url = 'https://livingatlas.arcgis.com/wayback/#active=47963&mapCenter=-111.821131%2C41.743871%2C19'
 driver.get(url)
+driver.fullscreen_window()
+
 print("Chrome Browser Invoked")
 
 # WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "flex items-center justify-center cursor-pointer my-1")))
@@ -57,20 +60,16 @@ WebDriverWait(driver, 10).until(lambda driver1: driver1.execute_script('return d
 
 screen_w, screen_h = utilities.get_screen_resolution()
 nav_width = 350
-browser_header_size = 100
+browser_header_size = 0  # Equal to 0 when full screen
 center = Point(screen_w // 2 + nav_width, screen_h // 2 + browser_header_size)
-shift = Point(100, 60)
+shift = Point(100, 60)  # (width / 2, height / 2) of the selected region to take a screenshot
 
 top_left = Point(center.x - shift.x, center.y - shift.y)
 bottom_right = Point(center.x + shift.x, center.y + shift.y)
 
-# print(driver.get_window_size())
 # Take a screenshot of the region of interest
-# im = imagegrab.grab(bbox=(700, 150, 3840, 2160))
 im = imagegrab.grab(bbox=(top_left.x, top_left.y, bottom_right.x, bottom_right.y))
 im.show()
 im.save("./results/world_imagery_screenshot_100_60.png")
-
-# driver.save_screenshot("world_imagery_shot.png")
 # driver.close()
 
