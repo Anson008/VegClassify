@@ -39,7 +39,7 @@ class NAIPProcessor:
         _, height, width = self.naip_img.shape
         return self._naip_img.rio.reproject(dst_crs, shape=(height, width))
 
-    def get_rgb_naip(self):
+    def get_bgr_naip(self):
         """
         :return: numpy array, 3D array of shape (width, height, color) representing RGB image
         of the original 4-band NAIP image

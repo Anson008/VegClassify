@@ -38,7 +38,7 @@ class ConnectedComponents:
         res = dimension_df.describe()
         return res
 
-    def apply_filters(self, filters):
+    def apply_filters(self, filters=()):
         res = self
         for filter in filters:
             res = filter.apply(res)
@@ -113,8 +113,6 @@ class ConnectedComponentsProcessor:
         combined_mask = np.zeros(cc_object.labels[0].shape, dtype='bool_')
         for i in range(cc_object.num_labels):
             component_mask = (cc_object.labels[i] == i + 1)
-            if i == 0:
-                print(np.sum(component_mask))
             combined_mask = np.ma.mask_or(combined_mask, component_mask)
             component_masks[i] = component_mask.astype("uint8") * 255
         return component_masks, combined_mask.astype("uint8") * 255
@@ -223,10 +221,10 @@ class ConnectedComponentsProcessor:
 if __name__ == "__main__":
     img_path = "./image/m_4111118_nw_12_060_20210813_Clip.tif"
     naip = NAIPProcessor(img_path)
-    naip_rgb = naip.get_rgb_naip()
+    naip_bgr = naip.get_bgr_naip()
     naip_reprojected = naip.reproject("EPSG:4326")
     ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
-    ndvi_classified = NAIPProcessor.classify(ndvi, 0.11, invert=False)
+    ndvi_classified = NAIPProcessor.classify(ndvi, 0.11, invert=True)
     cv2_cc_generator = CV2ConnectedComponentsGenerator(ndvi_classified, 8)
     cc_results = cv2_cc_generator.generate()
 
@@ -239,8 +237,8 @@ if __name__ == "__main__":
 
     masks, combined_mask = ConnectedComponentsProcessor.make_mask(cc_object)
     # # print(len(masks))
-    frames = ConnectedComponentsProcessor.overlap_on_map(combined_mask, naip_rgb, "red", True)
+    # frames = ConnectedComponentsProcessor.overlap_on_map(combined_mask, naip_rgb, "red", True)
     # # CV2ConnectedComponentsGenerator.make_video(frames, "./results/cc_video_area_test.avi")
-    # frames = ConnectedComponentsProcessor.mark_cc_on_map(cc_object, naip_rgb, 25)
-    cv2.imwrite("./results/overlap_test9.png", frames)
+    frames = ConnectedComponentsProcessor.mark_cc_on_map(cc_object, naip_bgr, 4)
+    cv2.imwrite("./results/mark_cc_on_map_threshold0.11.png", frames)
 
