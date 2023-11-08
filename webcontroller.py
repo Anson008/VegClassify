@@ -1,13 +1,10 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
-import re
 import pyscreenshot as imagegrab
-import time
 import utilities
 from utilities import Point
 
@@ -19,23 +16,26 @@ options.binary_location = "C:\\Program Files\\Google\\Chrome\\Application\\chrom
 
 # Start Chrome
 driver = webdriver.Chrome(options=options)
-# driver.maximize_window()
 
 # Load the target webpage
 url = 'https://livingatlas.arcgis.com/wayback/#active=47963&mapCenter=-111.821131%2C41.743871%2C19'
 driver.get(url)
 driver.fullscreen_window()
 
-print("Chrome Browser Invoked")
+# Wait until version filter button is clickable and toggle it off
+(WebDriverWait(driver, 10)
+ .until(EC.element_to_be_clickable((By.XPATH, "//*[@icon='check-square']")))
+ .click())
 
-# WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "flex items-center justify-center cursor-pointer my-1")))
-# local_change_check_box = driver.find_element(By.CLASS_NAME, "flex items-center justify-center cursor-pointer my-1")
-# if local_change_check_box.is_selected():
-#     print("Selected. Toggle off.")
-#     local_change_check_box.click()
+# Wait until the modal window is loaded and click close
+# (WebDriverWait(driver, 10)
+#  .until(EC.element_to_be_clickable((By.XPATH, "//*[@aria-label='close-modal']")))
+#  .click())
 
 # Wait until the button "Accept Cookies" appears and click
-WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="onetrust-accept-btn-handler"]'))).click()
+(WebDriverWait(driver, 10)
+ .until(EC.element_to_be_clickable((By.XPATH, '//*[@id="onetrust-accept-btn-handler"]')))
+ .click())
 
 # Wait until the list view options appears for parsing release dates of maps
 WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "py-1")))
@@ -70,6 +70,6 @@ bottom_right = Point(center.x + shift.x, center.y + shift.y)
 # Take a screenshot of the region of interest
 im = imagegrab.grab(bbox=(top_left.x, top_left.y, bottom_right.x, bottom_right.y))
 im.show()
-im.save("./results/world_imagery_screenshot_100_60.png")
+# im.save("./results/world_imagery_screenshot_100_60.png")
 # driver.close()
 
