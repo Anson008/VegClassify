@@ -1,7 +1,7 @@
 import cv2
 from abc import ABC, abstractmethod
-from connected_components import ConnectedComponents, CV2ConnectedComponentsGenerator
-from naip_processor import NAIPProcessor
+from morphology.connected_components import ConnectedComponents, CV2ConnectedComponentsGenerator
+from ndvi.naip_processor import NAIPProcessor
 import numpy as np
 
 
@@ -163,7 +163,7 @@ class AndCriteria:
 
 
 if __name__ == "__main__":
-    img_path = "./image/m_4111118_nw_12_060_20210813_Clip.tif"
+    img_path = "../image/m_4111118_nw_12_060_20210813_Clip.tif"
     naip = NAIPProcessor(img_path)
     naip_rgb = naip.get_rgb_naip()
     naip_reprojected = naip.reproject("EPSG:4326")

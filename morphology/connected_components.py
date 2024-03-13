@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import math
 import json
-from naip_processor import NAIPProcessor
+from ndvi.naip_processor import NAIPProcessor
 
 
 class ConnectedComponents:
@@ -219,12 +219,12 @@ class ConnectedComponentsProcessor:
 
 
 if __name__ == "__main__":
-    img_path = "./image/m_4111118_nw_12_060_20210813_Clip.tif"
+    img_path = "../image/m_4111118_nw_12_060_20210813_Clip.tif"
     naip = NAIPProcessor(img_path)
     naip_bgr = naip.get_bgr_naip()
     naip_reprojected = naip.reproject("EPSG:4326")
     ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
-    ndvi_classified = NAIPProcessor.classify(ndvi, 0.11, invert=True)
+    ndvi_classified = NAIPProcessor.classify(ndvi, 0.2, invert=True)
     cv2_cc_generator = CV2ConnectedComponentsGenerator(ndvi_classified, 8)
     cc_results = cv2_cc_generator.generate()
 
@@ -237,8 +237,10 @@ if __name__ == "__main__":
 
     masks, combined_mask = ConnectedComponentsProcessor.make_mask(cc_object)
     # # print(len(masks))
-    # frames = ConnectedComponentsProcessor.overlap_on_map(combined_mask, naip_rgb, "red", True)
+    overlap_frame = ConnectedComponentsProcessor.overlap_on_map(combined_mask, naip_bgr, "red", False)
     # # CV2ConnectedComponentsGenerator.make_video(frames, "./results/cc_video_area_test.avi")
     frames = ConnectedComponentsProcessor.mark_cc_on_map(cc_object, naip_bgr, 4)
-    cv2.imwrite("./results/mark_cc_on_map_threshold0.11.png", frames)
+    cv2.imwrite("../results/mark_cc_on_map_threshold0.2.png", frames)
+    cv2.imwrite("../results/overlap_on_map_threshold0.2_invert.png", overlap_frame)
+    # cv2.imwrite("./results/overlap_on_map_threshold0.2.png", overlap_frame)
 
