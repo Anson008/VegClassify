@@ -7,11 +7,17 @@ from bs4 import BeautifulSoup
 import pyscreenshot as imagegrab
 import utilities
 from utilities import Point
+import numpy as np
 
 
 class ImageryWaybackDriver:
     def __init__(self, webdriver):
         self.webdriver = webdriver
+
+    @staticmethod
+    def make_url(lon, lat, release_num=47963, scale=18):
+        return (f"https://livingatlas.arcgis.com/wayback/#active="
+                f"{release_num}&mapCenter={lon:.5f}%2C{lat:.5f}%2C{scale:d}")
 
     def load_url(self, url):
         # Load the target webpage
@@ -44,7 +50,7 @@ class ImageryWaybackDriver:
         page_source = self.webdriver.page_source
         bs = BeautifulSoup(page_source, 'html.parser')
         list_cards = bs.findAll('div', {'class': 'py-1'})
-        print(f"Number of date items: {len(list_cards)}")
+        # print(f"Number of date items: {len(list_cards)}")
 
         # Build a hashmap of release date and data-release-num
         date_to_release_num = dict()
@@ -53,7 +59,7 @@ class ImageryWaybackDriver:
             date_to_release_num[date.get_text()] = card.attrs['data-release-num']
         return date_to_release_num
 
-    def take_screenshot(self, width, height, save_to_file):
+    def take_screenshot(self, width, height, save_to_file=None):
         # Wait until the page is fully loaded
         WebDriverWait(self.webdriver, 10).until(lambda driver1: driver1.execute_script('return document.readyState') == 'complete')
 
@@ -69,7 +75,10 @@ class ImageryWaybackDriver:
         # Take a screenshot of the region of interest
         im = imagegrab.grab(bbox=(top_left.x, top_left.y, bottom_right.x, bottom_right.y))
         # im.show()
-        im.save(save_to_file)
+        if save_to_file is not None:
+            im.save(save_to_file)
+
+        return np.array(im)
 
     def close(self):
         self.webdriver.close()
@@ -85,14 +94,24 @@ if __name__ == "__main__":
     driver = webdriver.Chrome(options=options)
 
     # Load the target webpage
-    url = 'https://livingatlas.arcgis.com/wayback/#active=47963&mapCenter=-83.78206%2C47.27444%2C19'
-    path = "./results/test_screenshot.png"
-
+    # url = 'https://livingatlas.arcgis.com/wayback/#active=47963&mapCenter=-111.82515%2C41.74474%2C17'
+    # path = "../results/test_screenshot_C17.png"
+    # scale_factor = 18
+    #
     wayback_driver = ImageryWaybackDriver(driver)
+    # wayback_driver.load_url(url)
+    # wayback_driver.toggle_off_version_filter()
+    # wayback_driver.accept_cookies()
+    # release_dates = wayback_driver.get_release_dates()
+    # wayback_driver.take_screenshot(512, 1024, path)
+    # for key, value in release_dates.items():
+    #     print(f"Date: {key}; Release num: {value}")
+
+    url = wayback_driver.make_url(-111.825158, 41.744748)
     wayback_driver.load_url(url)
     wayback_driver.toggle_off_version_filter()
     wayback_driver.accept_cookies()
     release_dates = wayback_driver.get_release_dates()
-    wayback_driver.take_screenshot(512, 512, path)
-    # for key, value in release_dates.items():
-    #     print(f"Date: {key}; Release num: {value}")
+    img = wayback_driver.take_screenshot(512, 1024)
+    print(type(img))
+    print(img.shape)
