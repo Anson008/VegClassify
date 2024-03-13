@@ -30,6 +30,10 @@ class NAIPProcessor:
         """
         self._naip_img = rxr.open_rasterio(img_path)
 
+    def get_center(self):
+        height, width = self.naip_img.shape[1:]
+        return (height - 1) // 2, (width - 1) // 2
+
     def reproject(self, dst_crs):
         """
         :param dst_crs: str, OGC WKT string or Proj.4 string
@@ -38,6 +42,10 @@ class NAIPProcessor:
         # Reproject NAIP to dst_crs with the same shape
         _, height, width = self.naip_img.shape
         return self._naip_img.rio.reproject(dst_crs, shape=(height, width))
+
+    def get_lon_lat(self, dst_crs="EPSG:4326", row=0, col=0):
+        naip = self.reproject(dst_crs)
+        return naip[0, row, col].x.values.item(), naip[0, row, col].y.values.item()
 
     def get_bgr_naip(self):
         """
@@ -80,11 +88,21 @@ class NAIPProcessor:
         :param threshold: float, the value to distinguish green space and non-green space
         :return: numpy array, classified pixel values of the image
         """
-        ndvi[ndvi >= threshold] = 1
-        ndvi[ndvi < threshold] = 0
+        classified_ndvi = np.zeros_like(ndvi, dtype=np.uint8)
+        classified_ndvi[ndvi >= threshold] = 1
+        classified_ndvi[ndvi < threshold] = 0
         if invert:
-            ndvi = np.invert(ndvi.astype(np.bool_)).astype(np.uint8)
-        return ndvi
+            classified_ndvi = np.invert(classified_ndvi.astype(np.bool_))
+        return classified_ndvi.astype(np.uint8)
+
+    @staticmethod
+    def set_mask_color(classified_ndvi, colors):
+        res = cv2.cvtColor(classified_ndvi, cv2.COLOR_GRAY2BGR)
+        # print(f"res shape: {res.shape}")
+        res[res[:, :, 0] != 0, 0] = colors[0]
+        res[res[:, :, 1] != 0, 1] = colors[1]
+        res[res[:, :, 2] != 0, 2] = colors[2]
+        return res
 
     @staticmethod
     def plot_bands(img, cmap, title):
@@ -105,7 +123,7 @@ class NAIPProcessor:
 
 
 if __name__ == "__main__":
-    # img_path = "./image/m_4111118_nw_12_060_20210813_Clip.tif"
+    img_path = "../image/m_4111118_nw_12_060_20210813_Clip.tif"
     # naip = NAIPProcessor()
     # naip.naip_img = img_path
     # naip_rgb = naip.get_rgb_naip()
@@ -115,8 +133,15 @@ if __name__ == "__main__":
     # ndvi_classified = NAIPProcessor.classify(ndvi, 0.1)
     # NAIPProcessor.plot_bands(ndvi_classified, "PiYG", title="NDVI")
 
-    path = "C:\\Users\\xczha\\Downloads\\775.jfif"
-    naip = NAIPProcessor()
-    naip.naip_img = path
-    img = naip.naip_img
-    print(type(img))
+    # img_path = "../image/test_data/test1/green_space_018.jpg"
+    naip = NAIPProcessor(img_path)
+    print(naip.naip_img.shape)
+    naip_rgb = naip.get_bgr_naip()
+    print(naip_rgb.shape)
+    # naip_bgr = naip.get_bgr_naip()
+    # naip_reprojected = naip.reproject("EPSG:4326")
+    # ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
+    # ndvi_classified = NAIPProcessor.classify(ndvi, 0.2, invert=True)
+    # NAIPProcessor.plot_bands(ndvi_classified)
+    lon, lat = naip.get_lon_lat(dst_crs="EPSG:4326")
+    print(lon, lat)
