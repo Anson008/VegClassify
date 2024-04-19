@@ -1,5 +1,5 @@
 import numpy as np
-from utilities import UnitConverterFactory
+from util import UnitConverterFactory
 
 
 class GeoLocation:
