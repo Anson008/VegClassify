@@ -47,6 +47,9 @@ class NAIPProcessor:
         naip = self.reproject(dst_crs)
         return naip[0, row, col].x.values.item(), naip[0, row, col].y.values.item()
 
+    def get_resolution(self):
+        return self.naip_img.rio.resolution()
+
     def get_bgr_naip(self):
         """
         :return: numpy array, 3D array of shape (width, height, color) representing RGB image
@@ -92,8 +95,9 @@ class NAIPProcessor:
         classified_ndvi[ndvi >= threshold] = 1
         classified_ndvi[ndvi < threshold] = 0
         if invert:
-            classified_ndvi = np.invert(classified_ndvi.astype(np.bool_))
-        return classified_ndvi.astype(np.uint8)
+            classified_ndvi = np.invert(classified_ndvi.astype(np.bool_)).astype(np.uint8)
+        classified_ndvi[classified_ndvi != 0] = 255
+        return classified_ndvi
 
     @staticmethod
     def set_mask_color(classified_ndvi, colors):
@@ -138,10 +142,16 @@ if __name__ == "__main__":
     print(naip.naip_img.shape)
     naip_rgb = naip.get_bgr_naip()
     print(naip_rgb.shape)
-    # naip_bgr = naip.get_bgr_naip()
-    # naip_reprojected = naip.reproject("EPSG:4326")
-    # ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
-    # ndvi_classified = NAIPProcessor.classify(ndvi, 0.2, invert=True)
+    naip_bgr = naip.get_bgr_naip()
+    naip_reprojected = naip.reproject("EPSG:4326")
+    ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
+    ndvi_classified = NAIPProcessor.classify(ndvi, 0.2, invert=False)
+    print(type(ndvi_classified))
+    print(ndvi_classified.shape)
+    cv2.imshow("naip", ndvi_classified)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
     # NAIPProcessor.plot_bands(ndvi_classified)
-    lon, lat = naip.get_lon_lat(dst_crs="EPSG:4326")
-    print(lon, lat)
+    # lon, lat = naip.get_lon_lat(dst_crs="EPSG:4326")
+    # print(lon, lat)
