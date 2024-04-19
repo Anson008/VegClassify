@@ -5,8 +5,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import pyscreenshot as imagegrab
-import utilities
-from utilities import Point
+import util
+from util import Point
 import numpy as np
 
 
@@ -63,7 +63,7 @@ class ImageryWaybackDriver:
         # Wait until the page is fully loaded
         WebDriverWait(self.webdriver, 10).until(lambda driver1: driver1.execute_script('return document.readyState') == 'complete')
 
-        screen_w, screen_h = utilities.get_screen_resolution()
+        screen_w, screen_h = util.get_screen_resolution()
         nav_width = 350
         browser_header_size = 0  # Equal to 0 when full screen
         center = Point(screen_w // 2 + nav_width, screen_h // 2 + browser_header_size)
