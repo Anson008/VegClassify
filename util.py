@@ -1,6 +1,9 @@
 import math
 import ctypes
 
+import cv2
+import numpy as np
+
 
 class UnitConverterFactory:
     @staticmethod
@@ -58,4 +61,19 @@ class Point:
     @y.setter
     def y(self, val):
         self._y = val
+
+
+def create_grid(start, stop, num):
+    return np.linspace(start, stop, num, endpoint=True)
+
+
+def cv2_show_image(file_path, window_name, top_left=None, bottom_right=None, transpose=False):
+    img = cv2.imread(file_path)
+    if top_left is not None and bottom_right is not None:
+        img = img[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
+    if transpose:
+        img = cv2.transpose(img)
+    cv2.imshow(window_name, img)
+    cv2.waitKey(0)
+    cv2.destroyWindow(window_name)
 
