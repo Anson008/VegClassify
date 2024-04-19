@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+import util
 from ndvi.naip_processor import NAIPProcessor
 from web_scraper.imagery_wayback_driver import ImageryWaybackDriver
 from selenium import webdriver
@@ -8,6 +8,9 @@ from selenium.webdriver.chrome.options import Options
 import os
 from mmseg.apis import init_model, inference_model, show_result_pyplot
 import matplotlib.pyplot as plt
+
+
+wayback_scale_to_resolution = {"16": 0.9843, "18": 0.2237, "17": 0.4474}
 
 
 class Inferencer:
@@ -66,147 +69,145 @@ class Inferencer:
         cv2.destroyAllWindows()
 
 
-def generate_train_data():
-    # top_left = (41.763356, -111.860899)
-    # bottom_right = (41.701922, -111.801124)
-    # xy_min = [min(top_left[0], bottom_right[0]), min(top_left[1], bottom_right[1])]
-    # xy_max = [max(top_left[0], bottom_right[0]), max(top_left[1], bottom_right[1])]
-    n_samples = 1
-    location_data = np.zeros((n_samples, 2))
-    location_data[0, 0] = 40.68889
-    location_data[0, 1] = -111.86859
-    # print(location_data)
-
-    # Specify Chrome driver path
-    options = Options()
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.binary_location = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-
-    # Start Chrome
-    # driver = webdriver.Chrome(options=options)
-
-    base_url = "https://livingatlas.arcgis.com/wayback/#active={:d}&mapCenter={:.6f}%2C{:.6f}%2C{:d}"
-    release_num = 47963
-    scale_factor = 18
-    width = 512
-    height = 1024
-
-    out_path_base = f"./image/test_data/RN{release_num}_C{scale_factor}_{width}X{height}_Num{n_samples}"
-    if not os.path.exists(out_path_base):
-        os.makedirs(out_path_base)
-
-    base_filename = "green_space_"
-    suffix = ".png"
-
-    pred_out_path = "../image/predictions"
-    for i in range(location_data.shape[0]):
-        driver = webdriver.Chrome(options=options)
-        wayback = ImageryWaybackDriver(driver)
-        url = base_url.format(release_num, location_data[i, 1], location_data[i, 0], scale_factor)
-        wayback.load_url(url)
-        wayback.toggle_off_version_filter()
-        wayback.accept_cookies()
-        filename = base_filename + str(i).zfill(len(str(n_samples))) + suffix
-        save_to_file = os.path.join(out_path_base, filename)
-        wayback.take_screenshot(width, height, save_to_file)
-
-        config_path = "../configs/fcn_aux-hr48_256x512_80k_singlegreen.py"
-        checkpoint_path = "../checkpoints/iter_1000.pth"
-
-        test_img = save_to_file
-        pred_out_filename = "pred_{}.png".format(filename)
-        pred_img = os.path.join(pred_out_path, pred_out_filename)
-
-        model = init_model(config_path, checkpoint_path, device="cuda:0")
-        pred_res = inference_model(model, test_img)
-
-        vis_image = show_result_pyplot(model, test_img, pred_res, out_file=pred_img, wait_time=1)
-
-        print("Done!")
+def get_wayback_shot_size(naip_size, naip_resolution, wayback_resolution, beta):
+    naip_h, naip_w = naip_size
+    wayback_w = round(naip_h * naip_resolution / wayback_resolution * beta)
+    wayback_h = round(naip_w * naip_resolution / wayback_resolution * beta)
+    if wayback_w <= naip_w:
+        wayback_w = round(naip_w * beta)
+    if wayback_h <= naip_h:
+        wayback_h = round(naip_h * beta)
+    return wayback_h, wayback_w
 
 
 if __name__ == "__main__":
+    # Set model configuration path and checkpoint path
     config_path = "../configs/fcn_aux-hr48_256x512_80k_singlegreen.py"
     checkpoint_path = "../checkpoints/iter_1000.pth"
 
+    # Set input NAIP imagery path
     naip_img_path = "../image/m_4111118_nw_12_060_20210813_Clip.tif"
+
+    # Create a NAIP processor
     naip = NAIPProcessor(naip_img_path)
     naip_bgr = naip.get_bgr_naip()
 
     center_r, center_c = naip.get_center()
     center_lon, center_lat = naip.get_lon_lat(row=center_r, col=center_c)
 
+    # Initialize Selenium driver
     options = Options()
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.binary_location = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
     driver = webdriver.Chrome(options=options)
     wayback_driver = ImageryWaybackDriver(driver)
-    url = wayback_driver.make_url(center_lon, center_lat, scale=17)
+
+    # Load webpage with url
+    scale = 18
+    url = wayback_driver.make_url(center_lon, center_lat, scale=scale)
     wayback_driver.load_url(url)
     wayback_driver.toggle_off_version_filter()
     wayback_driver.accept_cookies()
     # save_wayback_img = "../image/test_data/test1/wayback_img.jpg"
-    wayback_img = wayback_driver.take_screenshot(512, 1024)
 
-    # test_img_path = "../image/"
-    # test_img_names = ["m_4111118_nw_12_060_20210813_Clip.tif"]
-    out_path_base = "../image/test_data/test1/output_wayback/"
-    #
-    #
+    # Get a screenshot of the region of interest
+    naip_h, naip_w = naip_bgr.shape[:2]
+    wayback_resolution = wayback_scale_to_resolution[str(scale)]
+    naip_resolution = abs(naip.get_resolution()[0])
+
+    beta = 1.1  # Screenshot scale factor
+    wayback_h, wayback_w = get_wayback_shot_size((naip_h, naip_w), naip_resolution, wayback_resolution, beta)
+
+    wayback_img = wayback_driver.take_screenshot(wayback_w, wayback_h)
+    wayback_img = cv2.cvtColor(wayback_img, cv2.COLOR_RGB2BGR)
+
+    # Set output root directory
+    out_path_base = f"../image/test_data/test_morph_open_close/output_wayback{wayback_h}X{wayback_w}_GTScale{scale}_TMScaleDYN/"
+
+    # Get inference from the DeepGreen model
     deep_green = Inferencer(config_path, checkpoint_path)
     ground_truth_segs = deep_green.infer_batch([wayback_img])
 
+    # Threshold the segmentation results generated by the DeepGreen model
     ground_truth_seg = ground_truth_segs[0].astype(np.uint8)
     ground_truth_seg[ground_truth_seg != 0] = 255
-    print(f"Ground truth: {ground_truth_seg.max(), ground_truth_seg.min()}")
+    # print(f"Ground truth size: {ground_truth_seg.shape}")
 
-    naip_reprojected = naip.reproject("EPSG:4326")
+    # Calculate NDVI on the NAIP imagery
+    naip_reprojected = naip.naip_img  #naip.reproject("EPSG:4326")
     ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
-    template_h, template_w = ndvi.shape[:2]
 
-    start = 0
-    end = 0.3
-    step = 0.02
-    thresholds = np.arange(start, end + step, step)
+    # Alpha is the resizing factor that guarantees a Wayback imagery screenshot
+    # having the same resolution as NAIP imagery
+    alpha = naip_resolution / wayback_resolution
+    # print(f"alpha={alpha}")
+    ndvi_thresholds = np.linspace(0, 0.3, 30, endpoint=True)
+    delta = alpha * (beta - 1)
+    # print(f"wayback_h * beta = {wayback_h * beta}")
+    # print(f"naip_h * alpha = {naip_h * alpha}")
+    # print(f"delta={delta}")
+
+    # Num must be an even number
+    scales = np.linspace(alpha - delta, alpha + delta, 4, endpoint=False)
     best_threshold = dict()
     optimal_metrics = dict()
 
-    methods = ['cv2.TM_CCOEFF', 'cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR', 'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED']
+    # Set template matching methods
+    # methods_backup = ['cv2.TM_CCOEFF', 'cv2.TM_CCORR', 'cv2.TM_SQDIFF']
+    open_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    close_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+
+    methods = ['cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF_NORMED']
     for method in methods:
         global_min = float('inf')
         global_max = float('-inf')
         print(f"Matching on {method}")
-        for threshold in thresholds:
+        for threshold in ndvi_thresholds:
             ndvi_classified = NAIPProcessor.classify(ndvi, threshold, invert=False)
+            ndvi_classified = cv2.morphologyEx(ndvi_classified, cv2.MORPH_OPEN, open_kernel)
+            ndvi_classified = cv2.morphologyEx(ndvi_classified, cv2.MORPH_CLOSE, close_kernel)
+            for scale in scales:
+                ndvi_temp = ndvi_classified.copy()
+                ndvi_temp = cv2.resize(ndvi_temp,
+                                             dsize=(0, 0),
+                                             fx=scale,
+                                             fy=scale,
+                                             interpolation=cv2.INTER_CUBIC)
+                # template_h, template_w = ndvi_classified.shape[:2]
+                similarity_res = cv2.matchTemplate(ground_truth_seg, ndvi_temp, eval(method))
+                min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(similarity_res)
 
-            similarity_res = cv2.matchTemplate(ground_truth_seg, ndvi_classified, eval(method))
-            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(similarity_res)
-
-            if "SQDIFF" in method:
-                if min_val < global_min:
-                    global_min = min_val
-                    best_threshold[method] = (threshold, min_val, min_loc, similarity_res)
-            else:
-                if max_val > global_max:
-                    global_max = max_val
-                    best_threshold[method] = (threshold, max_val, max_loc, similarity_res)
+                if "SQDIFF" in method:
+                    if min_val < global_min:
+                        global_min = min_val
+                        best_threshold[method] = (threshold, min_val, min_loc, scale, ndvi_temp.shape[:2], similarity_res)
+                else:
+                    if max_val > global_max:
+                        global_max = max_val
+                        best_threshold[method] = (threshold, max_val, max_loc, scale, ndvi_temp.shape[:2], similarity_res)
 
     if not os.path.exists(out_path_base):
         try:
-            os.mkdir(out_path_base)
+            os.makedirs(out_path_base)
+            print("Directory created.")
         except OSError as error:
             print(error)
+
+    wayback_img_filename = f"wayback_screenshot_{wayback_h}X{wayback_w}.png"
+    cv2.imwrite(os.path.join(out_path_base, wayback_img_filename), wayback_img)
 
     color_ground_truth = NAIPProcessor.set_mask_color(ground_truth_seg, (0, 0, 255))
     combined_ground_truth = cv2.addWeighted(wayback_img, 1, color_ground_truth, 0.5, 0)
     cv2.imwrite(os.path.join(out_path_base, "ground_truth_wayback.png"), combined_ground_truth)
 
     for key, val in best_threshold.items():
-        print(f"{key}: {val[:2]}")
+        print(f"{key}: {val[:-1]}")
         ground_truth_copy = combined_ground_truth.copy()
         best_ndvi_img = NAIPProcessor.classify(ndvi, val[0], invert=False)
+        best_ndvi_img = cv2.morphologyEx(best_ndvi_img, cv2.MORPH_OPEN, open_kernel)
+        best_ndvi_img = cv2.morphologyEx(best_ndvi_img, cv2.MORPH_CLOSE, close_kernel)
         color_mask = NAIPProcessor.set_mask_color(best_ndvi_img, (0, 0, 255))
-        bottom_right = (val[2][0] + template_w, val[2][1] + template_h)
+        bottom_right = (val[2][0] + val[4][1], val[2][1] + val[4][0])
         cv2.rectangle(ground_truth_copy, val[2], bottom_right, (0, 255, 255), 2)
         filename = "Detected_point_{}.png".format(key)
         cv2.imwrite(os.path.join(out_path_base, filename), ground_truth_copy)
