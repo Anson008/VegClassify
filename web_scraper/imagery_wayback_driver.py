@@ -17,7 +17,7 @@ class ImageryWaybackDriver:
     @staticmethod
     def make_url(lon, lat, release_num=47963, scale=18):
         return (f"https://livingatlas.arcgis.com/wayback/#active="
-                f"{release_num}&mapCenter={lon:.5f}%2C{lat:.5f}%2C{scale:d}")
+                f"{release_num}&mapCenter={lon:.9f}%2C{lat:.9f}%2C{scale:d}")
 
     def load_url(self, url):
         # Load the target webpage
@@ -107,11 +107,12 @@ if __name__ == "__main__":
     # for key, value in release_dates.items():
     #     print(f"Date: {key}; Release num: {value}")
 
-    url = wayback_driver.make_url(-111.825158, 41.744748)
+    url = wayback_driver.make_url(-111.876445354607, 41.75036406546104)
     wayback_driver.load_url(url)
     wayback_driver.toggle_off_version_filter()
     wayback_driver.accept_cookies()
-    release_dates = wayback_driver.get_release_dates()
-    img = wayback_driver.take_screenshot(512, 1024)
-    print(type(img))
-    print(img.shape)
+    # release_dates = wayback_driver.get_release_dates()
+    img = wayback_driver.take_screenshot(1510, 1510, "../image/test_screenshot.png")
+
+    # print(type(img))
+    # print(img.shape)
