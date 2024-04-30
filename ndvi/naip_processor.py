@@ -24,17 +24,17 @@ class NAIPProcessor:
         return self._naip_img
 
     @naip_img.setter
-    def naip_img(self, img_path):
+    def naip_img(self, new_naip_img):
         """
         :param img_path: str, path of NAIP image
         """
-        self._naip_img = rxr.open_rasterio(img_path)
+        self._naip_img = new_naip_img
 
     def get_center(self):
         height, width = self.naip_img.shape[1:]
         return (height - 1) // 2, (width - 1) // 2
 
-    def reproject(self, dst_crs):
+    def reproject(self, dst_crs="EPSG:4326"):
         """
         :param dst_crs: str, OGC WKT string or Proj.4 string
         :return: xarray.DataArray, reprojected NAIP image
@@ -60,6 +60,18 @@ class NAIPProcessor:
 
         # Extract RGB channels and reorder the color axis from (c, w, h) to (w, h, c)
         naip_rgb = np.moveaxis(naip_np_arr[0:3], 0, -1)
+
+        # Convert RGB to BGR, as BGR is the default color model of OpenCV
+        return cv2.cvtColor(naip_rgb, cv2.COLOR_RGB2BGR)
+
+    @staticmethod
+    def get_bgr_naip_image(naip_img):
+        naip_np_arr = naip_img.values
+
+        # Extract RGB channels and reorder the color axis from (c, w, h) to (w, h, c)
+        naip_rgb = np.moveaxis(naip_np_arr[0:3], 0, -1)
+        if naip_rgb is None:
+            print("Naip image is empty")
 
         # Convert RGB to BGR, as BGR is the default color model of OpenCV
         return cv2.cvtColor(naip_rgb, cv2.COLOR_RGB2BGR)
@@ -127,31 +139,33 @@ class NAIPProcessor:
 
 
 if __name__ == "__main__":
-    img_path = "../image/m_4111118_nw_12_060_20210813_Clip.tif"
-    # naip = NAIPProcessor()
-    # naip.naip_img = img_path
-    # naip_rgb = naip.get_rgb_naip()
-    # # NAIPProcessor.show_image("RGB", naip_rgb)
-    # naip_reprojected = naip.reproject("EPSG:4326")
-    # ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
-    # ndvi_classified = NAIPProcessor.classify(ndvi, 0.1)
-    # NAIPProcessor.plot_bands(ndvi_classified, "PiYG", title="NDVI")
+    img_path = "../image/m_4111118_nw_12_060_20210813.tif"
 
-    # img_path = "../image/test_data/test1/green_space_018.jpg"
     naip = NAIPProcessor(img_path)
-    print(naip.naip_img.shape)
+    # print(f"Original resolution: {naip.get_resolution()}")
+    # print(naip.naip_img.shape)
     naip_rgb = naip.get_bgr_naip()
-    print(naip_rgb.shape)
-    naip_bgr = naip.get_bgr_naip()
-    naip_reprojected = naip.reproject("EPSG:4326")
-    ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
-    ndvi_classified = NAIPProcessor.classify(ndvi, 0.2, invert=False)
-    print(type(ndvi_classified))
-    print(ndvi_classified.shape)
-    cv2.imshow("naip", ndvi_classified)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # print(naip_rgb.shape)
 
-    # NAIPProcessor.plot_bands(ndvi_classified)
-    # lon, lat = naip.get_lon_lat(dst_crs="EPSG:4326")
-    # print(lon, lat)
+    naip_reprojected = naip.reproject()
+    # reprojected_bgr = naip.get_bgr_naip_image(naip_reprojected)
+    # cv2.imwrite("../image/reprojected_bgr.png", reprojected_bgr)
+    # naip.naip_img = naip_reprojected
+    # print(f"reprojected resoultion: {naip.get_resolution()}")
+
+    r_start = 100
+    c_start = 0
+    width = 512
+    slice_img = naip.naip_img[:, r_start:r_start + width, c_start:c_start+width]
+    print(f"Slice image shape: {slice_img.shape, type(slice_img)}")
+
+    # slice_img_val = slice_img.values
+    # print(f"Slice image values: {slice_img_val.shape, type(slice_img_val)}")
+
+    slice_bgr_img = naip.get_bgr_naip_image(slice_img)
+
+    cv2.circle(slice_bgr_img, (255, 255), 3, (0, 0, 255), -1)
+    cv2.imwrite("../image/slice_img2.png", slice_bgr_img)
+
+    lon, lat = naip.get_lon_lat(row=r_start + 255, col=c_start + 255)
+    print(lon, lat)
