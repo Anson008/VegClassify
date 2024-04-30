@@ -4,4 +4,7 @@
     <option name="sdkName" value="ndvi_env" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="ndvi_env" project-jdk-type="Python SDK" />
+  <component name="PyPackaging">
+    <option name="earlyReleasesAsUpgrades" value="true" />
+  </component>
 </project>
