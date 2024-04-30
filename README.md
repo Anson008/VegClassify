@@ -13,6 +13,11 @@
 1. [OpenCV Image Thresholding](https://docs.opencv.org/4.x/d7/d4d/tutorial_py_thresholding.html)
 2. [OpenCV Thresholding (cv2.threshold)](https://pyimagesearch.com/2021/04/28/opencv-thresholding-cv2-threshold/)
 
+### Image Segmentation
+1. [Expectation-Maximization (EM) Algorithm: Solving a Chicken and Egg Problem](https://towardsdatascience.com/solving-a-chicken-and-egg-problem-expectation-maximization-em-c717547c3be2)
+2. [Gaussian Mixture Model Selection](https://scikit-learn.org/stable/auto_examples/mixture/plot_gmm_selection.html)
+3. [Semantic Segmentation using mmsegmentation](https://mducducd33.medium.com/sematic-segmentation-using-mmsegmentation-bcf58fb22e42)
+
 ### Selenium
 1. [Locating Elements](https://selenium-python.readthedocs.io/locating-elements.html#locating-by-xpath)
 2. [How to use regular expressions in xpath in Selenium with python?](https://www.tutorialspoint.com/how-to-use-regular-expressions-in-xpath-in-selenium-with-python)
