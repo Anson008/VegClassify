@@ -106,18 +106,15 @@ def get_ndvi_thresholds(start, stop, num):
     return np.linspace(start, stop, num, endpoint=True)
 
 
-def get_naip_imagery_samples(naip_h, naip_w, n_samples_per_dim=10):
-    s_w = min(int(naip_w / n_samples_per_dim), 512)
-    s_h = min(int(naip_h / n_samples_per_dim), 512)
+def get_naip_imagery_samples(naip_h, naip_w, n_samples_xy=(2, 2)):
+    s_w = min(int(naip_w / n_samples_xy[0]), 512)
+    s_h = min(int(naip_h / n_samples_xy[1]), 512)
 
-    top_left_x = np.random.randint(0, naip_w - s_w, n_samples_per_dim)
-    top_left_y = np.random.randint(0, naip_h - s_h, n_samples_per_dim)
-    # print(f"x_t: {top_left_x}")
-    # print(f"y_t: {top_left_y}")
+    top_left_x = np.random.randint(0, naip_w - s_w, n_samples_xy[0])
+    top_left_y = np.random.randint(0, naip_h - s_h, n_samples_xy[1])
+
     bottom_right_x = top_left_x + s_w
     bottom_right_y = top_left_y + s_h
-    # print(f"x_b: {bottom_right_x}")
-    # print(f"y_b: {bottom_right_y}")
 
     top_left_xy = np.array(np.meshgrid(top_left_x, top_left_y)).T.reshape(-1, 2)
     bottom_right_xy = np.array(np.meshgrid(bottom_right_x, bottom_right_y)).T.reshape(-1, 2)
@@ -129,4 +126,4 @@ def get_naip_imagery_samples(naip_h, naip_w, n_samples_per_dim=10):
 
 
 if __name__ == '__main__':
-    get_naip_imagery_samples(400, 400, 2)
+    get_naip_imagery_samples(400, 400)

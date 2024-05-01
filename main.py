@@ -12,7 +12,7 @@ from selenium.webdriver.chrome.options import Options
 from Inferencer.deep_recognizer import DeepGreenSpaceRecognizer
 
 
-def main(config_path, checkpoint_path, naip_img_path, n_samples_per_dim=3, wayback_scale=18):
+def main(config_path, checkpoint_path, naip_img_path, n_samples_xy=(2, 2), wayback_scale=18):
     # Create a NAIP processor
     naip = NAIPProcessor(naip_img_path)
     naip_resolution = abs(naip.get_resolution()[0])
@@ -33,7 +33,7 @@ def main(config_path, checkpoint_path, naip_img_path, n_samples_per_dim=3, wayba
     naip_h, naip_w = naip_bgr.shape[:2]
     wayback_resolution = util.WAYBACK_SCALE_TO_RESOLUTION[str(wayback_scale)]
 
-    naip_sample_xy = util.get_naip_imagery_samples(naip_h, naip_w, n_samples_per_dim)
+    naip_sample_xy = util.get_naip_imagery_samples(naip_h, naip_w, n_samples_xy)
 
     # Set output root directory
     out_path_base = f"./image/test_data/test5/output_naip{naip_w}X{naip_h}_waybackScale{wayback_scale}/"
@@ -189,7 +189,7 @@ if __name__ == '__main__':
     checkpoint_path = "./checkpoints/iter_1000.pth"
     naip_img_path = "./image/m_4111118_nw_12_060_20210813.tif"
 
-    main(config_path, checkpoint_path, naip_img_path, n_samples_per_dim=2)
+    main(config_path, checkpoint_path, naip_img_path, n_samples_xy=(8, 10))
 
     # img_path = "./image/m_4111118_nw_12_060_20210813_Clip.tif"
     # naip = NAIPProcessor(img_path)
