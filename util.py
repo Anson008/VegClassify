@@ -4,10 +4,14 @@ import os
 import cv2
 import numpy as np
 import rioxarray as rxr
+from Inferencer.deep_recognizer import DeepGreenSpaceRecognizer
+from ndvi.naip_processor import NAIPProcessor
+
 
 BETA = 1.1
 WAYBACK_SCALE_TO_RESOLUTION = {"16": 0.9843, "18": 0.2237, "17": 0.4474}
 TM_METHODS_STR = ('cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF_NORMED')
+NAIP_SPLIT_DIR = "./cache/naip_split/"
 
 
 class UnitConverterFactory:
@@ -169,36 +173,44 @@ def naip_to_bgr(naip_img):
     return cv2.cvtColor(naip_rgb, cv2.COLOR_RGB2BGR)
 
 
-def stitch_images(in_dir, out_dir):
+def get_split_row_size():
     token = "rowSize"
-    count = 0
-    images = []
-    row_size = 0
     try:
-        with os.scandir(in_dir) as entries:
-            sorted_entries = sorted(entries, key=lambda x: x.name)
-        for entry in sorted_entries:
-            # print(entry.name)
-            if entry.is_file():
-                if count == 0:
+        with os.scandir(NAIP_SPLIT_DIR) as entries:
+            for entry in entries:
+                if entry.is_file():
                     tokens = entry.name.split("_")
                     row_size = int(tokens[2][len(token):])
-                    print(row_size)
-                    count += 1
-                images.append(cv2.imread(entry.path))
-        img_rows = []
-        for start_idx in range(0, len(images), row_size):
-            # print(f"start_idx: {start_idx}")
-            img_row = np.hstack(tuple(np.asarray(i) for i in images[start_idx:start_idx + row_size]))
-            img_rows.append(img_row)
-        imgs_merged = np.vstack(tuple(img_rows))
-        create_directory(out_dir)
-        cv2.imwrite(os.path.join(out_dir, f"merged_ground_truth.png"), imgs_merged)
+                    return row_size
     except OSError as err:
         print(err)
 
 
+def stitch_images(in_dir, out_dir):
+    try:
+        with os.scandir(in_dir) as entries:
+            sorted_entries = sorted(entries, key=lambda x: x.name)
+    except OSError as err:
+        print(err)
+
+    images = []
+    for entry in sorted_entries:
+        if entry.is_file():
+            images.append(cv2.imread(entry.path))
+
+    row_size = get_split_row_size()
+    img_rows = []
+    for start_idx in range(0, len(images), row_size):
+        img_row = np.hstack(tuple(np.asarray(i) for i in images[start_idx:start_idx + row_size]))
+        img_rows.append(img_row)
+    imgs_merged = np.vstack(tuple(img_rows))
+    create_directory(out_dir)
+    cv2.imwrite(os.path.join(out_dir, f"merged_ground_truth.png"), imgs_merged)
+
+
 if __name__ == '__main__':
     in_dir = "./cache/naip_split/"
-    out_dir = "./cache/naip_merged/"
-    stitch_images(in_dir, out_dir)
+    # out_dir = "./cache/naip_merged/"
+    # stitch_images(in_dir, out_dir)
+
+
