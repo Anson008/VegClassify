@@ -14,7 +14,8 @@ from Inferencer.deep_recognizer import DeepGreenSpaceRecognizer
 
 def main(config_path, checkpoint_path, naip_img_path, n_samples_xy=(2, 2), wayback_scale=18):
     # Create a NAIP processor
-    naip = NAIPProcessor(naip_img_path)
+    naip_img = util.read_naip_image(naip_img_path)
+    naip = NAIPProcessor(naip_img)
     naip_resolution = abs(naip.get_resolution()[0])
     # naip.naip_img = naip.reproject()
     naip_bgr = naip.get_bgr_naip()
@@ -33,7 +34,7 @@ def main(config_path, checkpoint_path, naip_img_path, n_samples_xy=(2, 2), wayba
     naip_h, naip_w = naip_bgr.shape[:2]
     wayback_resolution = util.WAYBACK_SCALE_TO_RESOLUTION[str(wayback_scale)]
 
-    naip_sample_xy = util.get_naip_imagery_samples(naip_h, naip_w, n_samples_xy)
+    naip_sample_xy = util.get_naip_imagery_samples(naip_h, naip_w, n_samples_xy, seed=9527)
 
     # Set output root directory
     out_path_base = f"./image/test_data/test5/output_naip{naip_w}X{naip_h}_waybackScale{wayback_scale}/"
@@ -53,14 +54,14 @@ def main(config_path, checkpoint_path, naip_img_path, n_samples_xy=(2, 2), wayba
         center_r, center_c = diagonal_xy[1] + (s_h // 2 - 1), diagonal_xy[0] + (s_w // 2 - 1)
         print(f"Center {i + 1}: {center_r}, {center_c}")
         naip_sample_img = naip.naip_img[:, diagonal_xy[1]:diagonal_xy[3], diagonal_xy[0]:diagonal_xy[2]]  # naip.reproject("EPSG:4326")
-        wayback_h, wayback_w = util.get_wayback_shot_size((s_h, s_w), naip_resolution, wayback_resolution)
-        sample_bgr_img = naip.get_bgr_naip_image(naip_sample_img)
+        sample_bgr_img = util.naip_to_bgr(naip_sample_img)
         cv2.imwrite(os.path.join(out_path_base, f"sample_{i + 1}.png"), sample_bgr_img)
 
         # Get center coordinates of current sample
         center_lon, center_lat = naip.get_lon_lat(row=center_r, col=center_c)
         print(f"Center Geo {i + 1}: {center_lon}, {center_lat}")
 
+        wayback_h, wayback_w = util.get_wayback_shot_size((s_h, s_w), naip_resolution, wayback_resolution)
         driver = webdriver.Chrome(options=options)
         wayback_driver = ImageryWaybackDriver(driver)
 
@@ -181,42 +182,51 @@ def main(config_path, checkpoint_path, naip_img_path, n_samples_xy=(2, 2), wayba
     #     full_path = os.path.join(out_path_base, filename)
     #     cv2.imwrite(full_path, combined_img)
 
+def generate_ground_truth(input_dir, config_path, checkpoint_path):
+    try:
+        with os.scandir(input_dir) as entries:
+            sorted_entries = sorted(entries, key=lambda x: x.name)
+    except OSError as err:
+        print(err)
+
+    images = []
+    for i, entry in enumerate(sorted_entries):
+        if entry.is_file():
+            images.append(cv2.imread(entry.path))
+
+    deep_green = DeepGreenSpaceRecognizer(config_path, checkpoint_path)
+    n_digits = len(str(len(images)))
+    for i, image in enumerate(images):
+        ground_truth_seg = deep_green.infer_batch([image])[0]
+        _, ground_truth_gray = cv2.threshold(ground_truth_seg, 0, 255, cv2.THRESH_BINARY)
+        ground_truth_gray = ground_truth_gray.astype(np.uint8)
+        ground_truth_color = NAIPProcessor.set_mask_color(ground_truth_gray, (0, 0, 255))
+        combined_ground_truth = cv2.addWeighted(image, 1, ground_truth_color, 0.5, 0)
+        cv2.imwrite(os.path.join("./cache/ground_truth_masks/", f"ground_truth_mask_{str(i).zfill(n_digits)}.png"), ground_truth_gray)
+        cv2.imwrite(os.path.join("./cache/ground_truth_images/", f"ground_truth_image_{str(i).zfill(n_digits)}.png"), combined_ground_truth)
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # Set model configuration path and checkpoint path
-    config_path = "./configs/fcn_aux-hr48_256x512_80k_singlegreen.py"
-    checkpoint_path = "./checkpoints/iter_1000.pth"
-    naip_img_path = "./image/m_4111118_nw_12_060_20210813.tif"
+    # config_path = "./configs/fcn_aux-hr48_256x512_80k_singlegreen.py"
+    # checkpoint_path = "./checkpoints/iter_1000.pth"
+    # naip_img_path = "./image/m_4111118_nw_12_060_20210813.tif"
+    #
+    # main(config_path, checkpoint_path, naip_img_path, n_samples_xy=(8, 10))
 
-    main(config_path, checkpoint_path, naip_img_path, n_samples_xy=(8, 10))
+    # img_path = "./cache/naip_split"
+    # config_path = "./configs/fcn_aux-hr48_256x512_80k_singlegreen.py"
+    # checkpoint_path = "./checkpoints/iter_1000.pth"
+    # output_dir = "./cache/ground_truth_masks"
+    #
+    # generate_ground_truth(img_path, config_path, checkpoint_path)
 
-    # img_path = "./image/m_4111118_nw_12_060_20210813_Clip.tif"
-    # naip = NAIPProcessor(img_path)
-    # naip_rgb = naip.get_bgr_naip()
-    # naip_reprojected = naip.reproject("EPSG:4326")
-    # ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
-    # ndvi_classified = NAIPProcessor.classify(ndvi, 0.2)
-    # cv2_cc_generator = CV2ConnectedComponentsGenerator(ndvi_classified, 8)
-    # cc_results = cv2_cc_generator.generate()
-    #
-    # cc_object = ConnectedComponents(cc_results)
-    # # area_stats = cc_object.summary_statistics()
-    # # print(area_stats.round(2))
-    # # print(cc_object.stats)
-    #
-    # filter_factory = FilterFactory()
-    # filters = []
-    # filters.append(filter_factory.get_filter("height", "<=", 50))
-    # filters.append(filter_factory.get_filter("width", ">", 20))
-    # cc_object_filtered = cc_object.apply_filters(filters)
-    # print("Number of filtered cc:", cc_object_filtered.labels.shape)
-    #
-    # test_stats = cc_object_filtered.stats
-    # test_count = np.sum(test_stats[:, cv2.CC_STAT_WIDTH] <= 20)
-    # print("Number of cc with width <= 20:", test_count)
-    #
-    # test_count = np.sum(test_stats[:, cv2.CC_STAT_HEIGHT] > 50)
-    # print("Number of cc with height > 50:", test_count)
-    # # print(cc_object_filtered.summary_statistics().round(2))
+    # stitch_in_dir = "./cache/ground_truth_masks/"
+    # stitch_out_dir = "./cache/ground_truth_stitched_mask/"
+    # util.stitch_images(stitch_in_dir, stitch_out_dir)
+
+    stitch_in_dir = "./cache/ground_truth_images/"
+    stitch_out_dir = "./cache/ground_truth_stitched_image/"
+    util.stitch_images(stitch_in_dir, stitch_out_dir)
 
