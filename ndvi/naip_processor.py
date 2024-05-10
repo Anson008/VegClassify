@@ -4,17 +4,19 @@ import earthpy.spatial as es
 import earthpy.plot as ep
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+import util
+import math
 
 
 class NAIPProcessor:
+    NAIP_SPLIT_DIR = "../cache/naip_split/"
 
-    def __init__(self, img_path=None):
+    def __init__(self, naip_img):
         """
         :param img_path: str, path of the input NAIP image
         """
-        self._naip_img = None
-        if img_path:
-            self._naip_img = rxr.open_rasterio(img_path)
+        self._naip_img = naip_img
 
     @property
     def naip_img(self):
@@ -26,7 +28,7 @@ class NAIPProcessor:
     @naip_img.setter
     def naip_img(self, new_naip_img):
         """
-        :param img_path: str, path of NAIP image
+        :param: xarray.DataArray, a new NAIP image
         """
         self._naip_img = new_naip_img
 
@@ -60,18 +62,6 @@ class NAIPProcessor:
 
         # Extract RGB channels and reorder the color axis from (c, w, h) to (w, h, c)
         naip_rgb = np.moveaxis(naip_np_arr[0:3], 0, -1)
-
-        # Convert RGB to BGR, as BGR is the default color model of OpenCV
-        return cv2.cvtColor(naip_rgb, cv2.COLOR_RGB2BGR)
-
-    @staticmethod
-    def get_bgr_naip_image(naip_img):
-        naip_np_arr = naip_img.values
-
-        # Extract RGB channels and reorder the color axis from (c, w, h) to (w, h, c)
-        naip_rgb = np.moveaxis(naip_np_arr[0:3], 0, -1)
-        if naip_rgb is None:
-            print("Naip image is empty")
 
         # Convert RGB to BGR, as BGR is the default color model of OpenCV
         return cv2.cvtColor(naip_rgb, cv2.COLOR_RGB2BGR)
@@ -137,35 +127,31 @@ class NAIPProcessor:
                       title=title)
         plt.show()
 
+    def split_image(self, split_height, split_width):
+        util.create_directory(self.NAIP_SPLIT_DIR)
+        util.remove_all_files(self.NAIP_SPLIT_DIR)
+        input_image = self.get_bgr_naip()
+        h, w = input_image.shape[:2]
+        splits = [input_image[y:y + split_height, x:x + split_width]
+                  for y in range(0, h, split_height)
+                  for x in range(0, w, split_width)]
+        n_digits = len(str(len(splits)))
+        for i, split in enumerate(splits):
+            if split is not None:
+                filename = f"naip_split_rowSize{math.ceil(w / split_width)}_{str(i).zfill(n_digits)}.png"
+                cv2.imwrite(os.path.join(self.NAIP_SPLIT_DIR, filename), split)
+
 
 if __name__ == "__main__":
     img_path = "../image/m_4111118_nw_12_060_20210813.tif"
 
-    naip = NAIPProcessor(img_path)
-    # print(f"Original resolution: {naip.get_resolution()}")
-    # print(naip.naip_img.shape)
-    naip_rgb = naip.get_bgr_naip()
-    # print(naip_rgb.shape)
+    naip_img = util.read_naip_image(img_path)
+    naip = NAIPProcessor(naip_img)
+    naip.split_image(1024, 512)
 
-    naip_reprojected = naip.reproject()
-    # reprojected_bgr = naip.get_bgr_naip_image(naip_reprojected)
-    # cv2.imwrite("../image/reprojected_bgr.png", reprojected_bgr)
-    # naip.naip_img = naip_reprojected
-    # print(f"reprojected resoultion: {naip.get_resolution()}")
 
-    r_start = 100
-    c_start = 0
-    width = 512
-    slice_img = naip.naip_img[:, r_start:r_start + width, c_start:c_start+width]
-    print(f"Slice image shape: {slice_img.shape, type(slice_img)}")
 
-    # slice_img_val = slice_img.values
-    # print(f"Slice image values: {slice_img_val.shape, type(slice_img_val)}")
 
-    slice_bgr_img = naip.get_bgr_naip_image(slice_img)
 
-    cv2.circle(slice_bgr_img, (255, 255), 3, (0, 0, 255), -1)
-    cv2.imwrite("../image/slice_img2.png", slice_bgr_img)
 
-    lon, lat = naip.get_lon_lat(row=r_start + 255, col=c_start + 255)
-    print(lon, lat)
+
