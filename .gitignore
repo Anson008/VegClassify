@@ -240,5 +240,6 @@ fabric.properties
 # Images
 /image
 /results
-checkpoints/
+/checkpoints
+/cache
 
