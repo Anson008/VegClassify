@@ -1,5 +1,4 @@
 import cv2
-import rioxarray as rxr
 import earthpy.spatial as es
 import earthpy.plot as ep
 import numpy as np
@@ -10,7 +9,6 @@ import math
 
 
 class NAIPProcessor:
-    NAIP_SPLIT_DIR = "../cache/naip_split/"
 
     def __init__(self, naip_img):
         """
@@ -128,8 +126,8 @@ class NAIPProcessor:
         plt.show()
 
     def split_image(self, split_height, split_width):
-        util.create_directory(self.NAIP_SPLIT_DIR)
-        util.remove_all_files(self.NAIP_SPLIT_DIR)
+        util.create_directory(util.NAIP_SPLIT_DIR)
+        util.remove_all_files(util.NAIP_SPLIT_DIR)
         input_image = self.get_bgr_naip()
         h, w = input_image.shape[:2]
         splits = [input_image[y:y + split_height, x:x + split_width]
@@ -139,7 +137,7 @@ class NAIPProcessor:
         for i, split in enumerate(splits):
             if split is not None:
                 filename = f"naip_split_rowSize{math.ceil(w / split_width)}_{str(i).zfill(n_digits)}.png"
-                cv2.imwrite(os.path.join(self.NAIP_SPLIT_DIR, filename), split)
+                cv2.imwrite(os.path.join(util.NAIP_SPLIT_DIR, filename), split)
 
 
 if __name__ == "__main__":
