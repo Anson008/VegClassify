@@ -5,13 +5,17 @@ import cv2
 import numpy as np
 import rioxarray as rxr
 from Inferencer.deep_recognizer import DeepGreenSpaceRecognizer
-from ndvi.naip_processor import NAIPProcessor
 
-
+# Constants
 BETA = 1.1
 WAYBACK_SCALE_TO_RESOLUTION = {"16": 0.9843, "18": 0.2237, "17": 0.4474}
 TM_METHODS_STR = ('cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF_NORMED')
 NAIP_SPLIT_DIR = "./cache/naip_split/"
+NAIP_RANDOM_SAMPLES_DIR = "./cache/naip_random_samples/"
+WAYBACK_SCREENSHOTS_DIR = "./cache/wayback_screenshots/"
+GROUND_TRUTH_MASKS_DIR = "./cache/ground_truth_masks/"
+GROUND_TRUTH_IMAGES_DIR = "./cache/ground_truth_images/"
+SELENIUM_DRIVER_BINARY_LOC = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
 
 
 class UnitConverterFactory:
@@ -126,7 +130,6 @@ def get_naip_imagery_samples(naip_h, naip_w, n_samples_xy=(2, 2), seed=None):
     bottom_right_xy = np.array(np.meshgrid(bottom_right_x, bottom_right_y)).T.reshape(-1, 2)
 
     diagonal_xy = np.concatenate((top_left_xy, bottom_right_xy), axis=1)
-    # print(diagonal_xy)
 
     return diagonal_xy
 
@@ -209,8 +212,12 @@ def stitch_images(in_dir, out_dir):
 
 
 if __name__ == '__main__':
-    in_dir = "./cache/naip_split/"
+    # in_dir = "./cache/naip_split/"
     # out_dir = "./cache/naip_merged/"
     # stitch_images(in_dir, out_dir)
+
+    samples = get_naip_imagery_samples(512, 1024, (2, 4), 101)
+    print(samples)
+    print(samples.shape)
 
 
