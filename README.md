@@ -23,10 +23,11 @@
 2. [How to use regular expressions in xpath in Selenium with python?](https://www.tutorialspoint.com/how-to-use-regular-expressions-in-xpath-in-selenium-with-python)
 3. [Page Object Model and Page Factory in Selenium Python](https://www.browserstack.com/guide/page-object-model-in-selenium-python)
 
-### Raster Data
+### Geospatial Raster Data
 1. [Rioxarray Documentation](https://corteva.github.io/rioxarray/stable/index.html)
 2. [Add lat and lon to DataArray read in by rioxarray](https://gis.stackexchange.com/questions/443801/add-lat-and-lon-to-dataarray-read-in-by-rioxarray)
 3. [How to find coordinates of pixels of a GeoTIFF image with Python](https://gis.stackexchange.com/questions/394455/how-to-find-coordinates-of-pixels-of-a-geotiff-image-with-python)
+4. [Raster Coordinate Reference Systems (CRS)](https://pygis.io/docs/d_raster_crs_intro.html)
 
 ### Morphological Operations
 1. [Understanding Morphological Image Processing and Its Operations](https://towardsdatascience.com/understanding-morphological-image-processing-and-its-operations-7bcf1ed11756)
