@@ -5,8 +5,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import pyscreenshot as imagegrab
-import util
-from util import Point
+from utility import util
+from utility.util import Point
 import numpy as np
 
 
@@ -15,9 +15,9 @@ class ImageryWaybackDriver:
         self.webdriver = webdriver
 
     @staticmethod
-    def make_url(lon, lat, release_num=47963, scale=18):
+    def make_url(lon, lat, release_num=51423, scale=18):
         return (f"https://livingatlas.arcgis.com/wayback/#active="
-                f"{release_num}&mapCenter={lon:.9f}%2C{lat:.9f}%2C{scale:d}")
+                f"{release_num}&mapCenter={round(lon, 5)}%2C{round(lat, 5)}%2C{scale:d}")
 
     def load_url(self, url):
         # Load the target webpage
