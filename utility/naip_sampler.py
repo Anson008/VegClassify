@@ -5,6 +5,7 @@ class NaipSampler:
     def __init__(self, naip_h, naip_w):
         self._naip_h = naip_h
         self._naip_w = naip_w
+        self._samples = None
 
     @property
     def naip_h(self):
@@ -22,6 +23,13 @@ class NaipSampler:
     def naip_w(self, naip_w):
         self._naip_w = naip_w
 
+    @property
+    def samples(self):
+        return self._samples
+
+    def get_num_of_samples(self):
+        return self._samples.shape[0]
+
     def get_random_naip_imagery_samples(self, n_samples_xy=(2, 2), seed=None):
         s_w = min(int(self._naip_w / n_samples_xy[0]), 256)
         s_h = min(int(self._naip_h / n_samples_xy[1]), 512)
@@ -32,21 +40,30 @@ class NaipSampler:
         bottom_right_x = top_left_x + s_w
         bottom_right_y = top_left_y + s_h
 
-        return self._make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
+        self._samples = self._make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
+        return self._samples
 
-    def get_grid_center(self):
+    def get_grid_samples(self):
+        """
+        Divide the NAIP image into grid samples and return the coordinates of
+        the top-left and bottom-right of the grid samples.
+        :return: np.ndarray of shape (n_samples, 4).
+        [top_left_x, top_left_y, bottom_right_x, bottom_right_y]. The block includes the bottom_right coordinates.
+        """
         block_h = 512 if self.naip_h >= 512 else self.naip_h
-        block_w = 256 if self.naip_w >= 256 else self.naip_w
+        block_w = 512 if self.naip_w >= 512 else self.naip_w
 
-        bottom_right_x = np.arange(block_w, self.naip_w, block_w, dtype=np.int32)
-        bottom_right_y = np.arange(block_h, self.naip_h, block_h, dtype=np.int32)
-        top_left_x = bottom_right_x - block_w
-        top_left_y = bottom_right_y - block_h
+        top_left_x = np.arange(0, self.naip_w - block_w, block_w, dtype=np.int32)
+        top_left_y = np.arange(0, self.naip_h - block_h, block_h, dtype=np.int32)
+        bottom_right_x = top_left_x + block_w
+        bottom_right_y = top_left_y + block_h
 
-        return self._make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
+        self._samples = self._make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
+        return self._samples
 
     def _make_diagonal_coordinates(self, top_left_x, top_left_y, bottom_right_x, bottom_right_y):
         top_left_xy = np.array(np.meshgrid(top_left_x, top_left_y)).T.reshape(-1, 2)
         bottom_right_xy = np.array(np.meshgrid(bottom_right_x, bottom_right_y)).T.reshape(-1, 2)
         diagonal_xy = np.concatenate((top_left_xy, bottom_right_xy), axis=1)
         return diagonal_xy
+
