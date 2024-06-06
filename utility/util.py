@@ -91,22 +91,23 @@ def cv2_show_image(file_path, window_name, top_left=None, bottom_right=None, tra
     cv2.destroyWindow(window_name)
 
 
-def get_wayback_shot_size(naip_size, naip_resolution, wayback_resolution):
+def get_wayback_shot_size(naip_size, naip_resolution, wayback_resolution, beta=BETA):
     naip_h, naip_w = naip_size
-    wayback_w = round(naip_h * naip_resolution / wayback_resolution * BETA)
-    wayback_h = round(naip_w * naip_resolution / wayback_resolution * BETA)
+    alpha = naip_resolution / wayback_resolution
+    wayback_h = round(naip_h * alpha * beta)
+    wayback_w = round(naip_w * alpha * beta)
     if wayback_w <= naip_w:
-        wayback_w = round(naip_w * BETA)
+        wayback_w = round(naip_w * beta)
     if wayback_h <= naip_h:
-        wayback_h = round(naip_h * BETA)
+        wayback_h = round(naip_h * beta)
     return wayback_h, wayback_w
 
 
-def get_template_matching_scales(naip_resolution, wayback_resolution, n_points=4):
+def get_template_matching_scales(naip_resolution, wayback_resolution, n_points=4, beta=BETA):
     # Alpha is the resizing factor that guarantees a Wayback imagery screenshot
     # having the same resolution as NAIP imagery
     alpha = naip_resolution / wayback_resolution
-    delta = alpha * (BETA - 1)
+    delta = alpha * (beta - 1)
     scales = np.linspace(alpha - delta, alpha + delta, n_points, endpoint=False)
     return scales
 
@@ -115,8 +116,8 @@ def get_ndvi_thresholds(start, stop, num):
     return np.linspace(start, stop, num, endpoint=True)
 
 
-def get_naip_imagery_samples(naip_h, naip_w, n_samples_xy=(2, 2), seed=None):
-    s_w = min(int(naip_w / n_samples_xy[0]), 512)
+def get_random_naip_imagery_samples(naip_h, naip_w, n_samples_xy=(2, 2), seed=None):
+    s_w = min(int(naip_w / n_samples_xy[0]), 256)
     s_h = min(int(naip_h / n_samples_xy[1]), 512)
 
     rng = np.random.default_rng(seed)
@@ -126,11 +127,25 @@ def get_naip_imagery_samples(naip_h, naip_w, n_samples_xy=(2, 2), seed=None):
     bottom_right_x = top_left_x + s_w
     bottom_right_y = top_left_y + s_h
 
+    return make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
+
+
+def get_grid_center(naip_h, naip_w):
+    block_h = 512 if naip_h >= 512 else naip_h
+    block_w = 256 if naip_w >= 256 else naip_w
+
+    bottom_right_x = np.arange(block_w, naip_w, block_w, dtype=np.int32)
+    bottom_right_y = np.arange(block_h, naip_h, block_h, dtype=np.int32)
+    top_left_x = bottom_right_x - block_w
+    top_left_y = bottom_right_y - block_h
+
+    return make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
+
+
+def make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y):
     top_left_xy = np.array(np.meshgrid(top_left_x, top_left_y)).T.reshape(-1, 2)
     bottom_right_xy = np.array(np.meshgrid(bottom_right_x, bottom_right_y)).T.reshape(-1, 2)
-
     diagonal_xy = np.concatenate((top_left_xy, bottom_right_xy), axis=1)
-
     return diagonal_xy
 
 
@@ -211,12 +226,18 @@ def stitch_images(in_dir, out_dir):
     cv2.imwrite(os.path.join(out_dir, f"merged_ground_truth.png"), imgs_merged)
 
 
+def get_image_center(top_left, bottom_right):
+    tx, ty = top_left
+    bx, by = bottom_right
+    return (bx - tx) // 2, (by - ty) // 2
+
+
 if __name__ == '__main__':
     # in_dir = "./cache/naip_split/"
     # out_dir = "./cache/naip_merged/"
     # stitch_images(in_dir, out_dir)
 
-    samples = get_naip_imagery_samples(512, 1024, (2, 4), 101)
+    samples = get_random_naip_imagery_samples(512, 1024, (2, 4), 101)
     print(samples)
     print(samples.shape)
 
