@@ -4,7 +4,7 @@ import earthpy.plot as ep
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import util
+import utility
 import math
 
 
@@ -47,8 +47,15 @@ class NAIPProcessor:
         naip = self.reproject(dst_crs)
         return naip[0, row, col].x.values.item(), naip[0, row, col].y.values.item()
 
+    def get_center_lon_lat(self, top_left, bottom_right):
+        tx, ty = top_left
+        bx, by = bottom_right
+        naip_slice = NAIPProcessor(self._naip_img[:, ty:by+1, tx:bx+1])
+        center_row, center_col = naip_slice.get_center()
+        return naip_slice.get_lon_lat(row=center_row, col=center_col)
+
     def get_resolution(self):
-        return self.naip_img.rio.resolution()
+        return self._naip_img.rio.resolution()
 
     def get_bgr_naip(self):
         """
@@ -126,8 +133,8 @@ class NAIPProcessor:
         plt.show()
 
     def split_image(self, split_height, split_width):
-        util.create_directory(util.NAIP_SPLIT_DIR)
-        util.remove_all_files(util.NAIP_SPLIT_DIR)
+        utility.create_directory(utility.NAIP_SPLIT_DIR)
+        utility.remove_all_files(utility.NAIP_SPLIT_DIR)
         input_image = self.get_bgr_naip()
         h, w = input_image.shape[:2]
         splits = [input_image[y:y + split_height, x:x + split_width]
@@ -137,16 +144,18 @@ class NAIPProcessor:
         for i, split in enumerate(splits):
             if split is not None:
                 filename = f"naip_split_rowSize{math.ceil(w / split_width)}_{str(i).zfill(n_digits)}.png"
-                cv2.imwrite(os.path.join(util.NAIP_SPLIT_DIR, filename), split)
+                cv2.imwrite(os.path.join(utility.NAIP_SPLIT_DIR, filename), split)
 
 
 if __name__ == "__main__":
     img_path = "../image/m_4111118_nw_12_060_20210813.tif"
 
-    naip_img = util.read_naip_image(img_path)
+    naip_img = utility.read_naip_image(img_path)
     naip = NAIPProcessor(naip_img)
-    naip.split_image(1024, 512)
-
+    # naip.split_image(1024, 512)
+    shape = naip.naip_img.rio.get_gcps()
+    print(type(shape))
+    print(shape)
 
 
 
