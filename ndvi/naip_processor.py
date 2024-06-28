@@ -4,8 +4,9 @@ import earthpy.plot as ep
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import utility
+from utility import util
 import math
+# import json
 
 
 class NAIPProcessor:
@@ -103,7 +104,7 @@ class NAIPProcessor:
         classified_ndvi[ndvi < threshold] = 0
         if invert:
             classified_ndvi = np.invert(classified_ndvi.astype(np.bool_)).astype(np.uint8)
-        classified_ndvi[classified_ndvi != 0] = 255
+        # classified_ndvi[classified_ndvi != 0] = 255
         return classified_ndvi
 
     @staticmethod
@@ -133,8 +134,8 @@ class NAIPProcessor:
         plt.show()
 
     def split_image(self, split_height, split_width):
-        utility.create_directory(utility.NAIP_SPLIT_DIR)
-        utility.remove_all_files(utility.NAIP_SPLIT_DIR)
+        util.create_directory(util.NAIP_SPLIT_DIR)
+        util.remove_all_files(util.NAIP_SPLIT_DIR)
         input_image = self.get_bgr_naip()
         h, w = input_image.shape[:2]
         splits = [input_image[y:y + split_height, x:x + split_width]
@@ -144,13 +145,60 @@ class NAIPProcessor:
         for i, split in enumerate(splits):
             if split is not None:
                 filename = f"naip_split_rowSize{math.ceil(w / split_width)}_{str(i).zfill(n_digits)}.png"
-                cv2.imwrite(os.path.join(utility.NAIP_SPLIT_DIR, filename), split)
+                cv2.imwrite(os.path.join(util.NAIP_SPLIT_DIR, filename), split)
+
+    def generate_vegetation_mask(self, top_left: tuple, bottom_right: tuple, threshold: float, invert=False):
+        tx, ty = top_left
+        bx, by = bottom_right
+        img_block = self._naip_img[:, ty:by+1, tx:bx+1]
+        ndvi = self.calculate_ndvi(img_block)
+        return self.classify(ndvi, threshold, invert)
+
+    def get_template_match_info(self, naip_samples_path, wayback_shot_path, wayback_resolution):
+        naip_file_obj = os.scandir(naip_samples_path)
+        wayback_shot_file_obj = os.scandir(wayback_shot_path)
+        tm_info = []
+
+        i = 1
+        for naip, wayback_shot in zip(naip_file_obj, wayback_shot_file_obj):
+            if naip.name.endswith(".png") and wayback_shot.name.endswith(".png"):
+                naip_img = cv2.imread(os.path.join(naip_samples_path, naip.name))
+                wayback_img = cv2.imread(os.path.join(wayback_shot_path, wayback_shot.name))
+
+                scale, max_val, max_loc, ndvi_h, ndvi_w = self._match_template(wayback_img, naip_img, wayback_resolution)
+                ox, oy = max_loc
+                tm_info.append([scale, ox, oy, ndvi_h, ndvi_w])
+
+        tm_info = np.array(tm_info)
+        np.save(os.path.join("./cache/tm_info.npy"), tm_info)
+
+        return tm_info
+
+    def _match_template(self, ground_truth_image, naip_image, wayback_resolution):
+        tm_scales = util.get_template_matching_scales(abs(self.get_resolution()[0]), wayback_resolution)
+        global_max = float('-inf')
+        optimal_metrics = tuple()
+        best_match_img = None
+        for i, scale in enumerate(tm_scales):
+            ndvi_best = cv2.resize(naip_image.copy(),
+                                   dsize=(0, 0),
+                                   fx=scale,
+                                   fy=scale,
+                                   interpolation=cv2.INTER_CUBIC)
+            similarity_res = cv2.matchTemplate(ground_truth_image, ndvi_best, cv2.TM_CCOEFF_NORMED)
+            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(similarity_res)
+            if max_val > global_max:
+                global_max = max_val
+                optimal_metrics = (scale, max_val, max_loc, ndvi_best.shape[0], ndvi_best.shape[1])
+                best_match_img = ndvi_best
+
+        return optimal_metrics
 
 
 if __name__ == "__main__":
     img_path = "../image/m_4111118_nw_12_060_20210813.tif"
 
-    naip_img = utility.read_naip_image(img_path)
+    naip_img = util.read_naip_image(img_path)
     naip = NAIPProcessor(naip_img)
     # naip.split_image(1024, 512)
     shape = naip.naip_img.rio.get_gcps()

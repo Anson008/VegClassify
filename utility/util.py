@@ -2,9 +2,9 @@ import math
 import ctypes
 import os
 import cv2
+import json
 import numpy as np
 import rioxarray as rxr
-from Inferencer.deep_recognizer import DeepGreenSpaceRecognizer
 
 # Constants
 BETA = 1.1
@@ -15,7 +15,15 @@ NAIP_RANDOM_SAMPLES_DIR = "./cache/naip_random_samples/"
 WAYBACK_SCREENSHOTS_DIR = "./cache/wayback_screenshots/"
 GROUND_TRUTH_MASKS_DIR = "./cache/ground_truth_masks/"
 GROUND_TRUTH_IMAGES_DIR = "./cache/ground_truth_images/"
-SELENIUM_DRIVER_BINARY_LOC = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+# SELENIUM_DRIVER_BINARY_LOC = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+SELENIUM_DRIVER_BINARY_LOC = "C:/Program Files/ChromeDriver/chromedriver.exe"
+NAIP_SAMPLE_MASKS_DIR = "./cache/naip_random_sample_masks/"
+NAIP_BEST_MATCH_DIR = "./cache/naip_best_match/"
+GROUND_TRUTH_MASKS_BINARY_DIR = "./cache/ground_truth_masks_binary/"
+NAIP_MASKS_BINARY_DIR = "./cache/naip_masks_binary/"
+TM_MATCH_INFO = "./cache/tm_match_info/"
+TEMPLATE_MATCH_REGION = "./cache/template_match_region/"
+BEST_MATCH_IMG_DIR = "./cache/best_match_img/"
 
 
 class UnitConverterFactory:
@@ -230,6 +238,90 @@ def get_image_center(top_left, bottom_right):
     tx, ty = top_left
     bx, by = bottom_right
     return (bx - tx) // 2, (by - ty) // 2
+
+
+def match_template(ground_truth_mask, naip_mask, naip_resolution, wayback_resolution):
+    tm_scales = get_template_matching_scales(naip_resolution, wayback_resolution)
+    global_max = float('-inf')
+    optimal_metrics = tuple()
+    for i, scale in enumerate(tm_scales):
+        ndvi_best = cv2.resize(naip_mask.copy(),
+                               dsize=(0, 0),
+                               fx=scale,
+                               fy=scale,
+                               interpolation=cv2.INTER_CUBIC)
+        similarity_res = cv2.matchTemplate(ground_truth_mask, ndvi_best, cv2.TM_CCOEFF_NORMED)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(similarity_res)
+        if max_val > global_max:
+            global_max = max_val
+            optimal_metrics = (max_val, max_loc, ndvi_best)
+
+    return optimal_metrics
+
+
+def draw_template_match_region(wayback_shot_path, tm_info_path):
+    wayback_shot_file_obj = os.scandir(wayback_shot_path)
+    tm_info = np.load(tm_info_path)
+    # print(f"tm_info shape: {tm_info.shape}")
+    tm_info = tm_info.tolist()
+
+    for i, item in enumerate(zip(tm_info, wayback_shot_file_obj)):
+        tm_param, wayback_shot_file = item
+        filename = wayback_shot_file.name
+        if filename.endswith(".png"):
+            wayback_img = cv2.imread(os.path.join(wayback_shot_path, filename))
+            # print(tm_param)
+            _, ox, oy, h, w = tm_param
+            cv2.rectangle(wayback_img, (int(ox), int(oy)), (int(ox + w), int(oy + h)), (0, 255, 255), 3)
+            out_filename = f"template_match_region_{i + 1}.png"
+            cv2.imwrite(os.path.join(TEMPLATE_MATCH_REGION, out_filename), wayback_img)
+
+
+def get_confusion_matrix(naip_mask_path, ground_truth_mask_path, tm_info_path):
+    naip_file_obj = os.scandir(naip_mask_path)
+    gt_file_obj = os.scandir(ground_truth_mask_path)
+    tm_info = np.load(tm_info_path).tolist()
+    cm = {"tp": 0, "fp": 0, "tn": 0, "fn": 0, "kappa": 0}
+    tp, fp, tn, fn, kappa = 0, 0, 0, 0, 0
+
+    for naip_mask, gt_mask, tm_i in zip(naip_file_obj, gt_file_obj, tm_info):
+        scale, ox, oy, ndvi_h, ndvi_w = tm_i
+        ox = int(ox)
+        oy = int(oy)
+        ndvi_h = int(ndvi_h)
+        ndvi_w = int(ndvi_w)
+
+        naip_mask_img = cv2.imread(os.path.join(naip_mask_path, naip_mask.name))
+        gt_mask_img = cv2.imread(os.path.join(ground_truth_mask_path, gt_mask.name))
+
+        gt_matched_mask = gt_mask_img[oy:oy + ndvi_h, ox:ox + ndvi_w]
+        naip_matched_mask = cv2.resize(naip_mask_img,
+                                       dsize=(0, 0),
+                                       fx=scale,
+                                       fy=scale,
+                                       interpolation=cv2.INTER_CUBIC)
+
+        # Accumulate TP and TN
+        gt_and_naip = np.logical_and(gt_matched_mask, naip_matched_mask)
+        n_tp = np.sum(gt_and_naip).astype(np.int64)
+        tp += n_tp
+        tn += gt_and_naip.size - n_tp
+
+        # Accumulate FP and FN
+        fp += np.sum(np.logical_and(np.logical_not(gt_matched_mask), naip_matched_mask)).astype(np.int64)
+        fn += np.sum(np.logical_and(gt_matched_mask, np.logical_not(naip_matched_mask))).astype(np.int64)
+
+    kappa = 2.0 * (tp * tn - fp * fn) / ((tp + fp) * (fp + tn) + (tp + fn) * (fn + tn))
+
+    cm["tp"] = int(tp)
+    cm["fp"] = int(fp)
+    cm["tn"] = int(tn)
+    cm["fn"] = int(fn)
+    cm["kappa"] = float(kappa)
+
+    with open("./cache/confusion_matrix.json", "w+") as outfile:
+        outfile.write(json.dumps(cm, indent=4))
+    return cm
 
 
 if __name__ == '__main__':
