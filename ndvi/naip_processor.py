@@ -159,7 +159,6 @@ class NAIPProcessor:
         wayback_shot_file_obj = os.scandir(wayback_shot_path)
         tm_info = []
 
-        i = 1
         for naip, wayback_shot in zip(naip_file_obj, wayback_shot_file_obj):
             if naip.name.endswith(".png") and wayback_shot.name.endswith(".png"):
                 naip_img = cv2.imread(os.path.join(naip_samples_path, naip.name))
@@ -178,7 +177,6 @@ class NAIPProcessor:
         tm_scales = util.get_template_matching_scales(abs(self.get_resolution()[0]), wayback_resolution)
         global_max = float('-inf')
         optimal_metrics = tuple()
-        best_match_img = None
         for i, scale in enumerate(tm_scales):
             ndvi_best = cv2.resize(naip_image.copy(),
                                    dsize=(0, 0),
@@ -190,7 +188,6 @@ class NAIPProcessor:
             if max_val > global_max:
                 global_max = max_val
                 optimal_metrics = (scale, max_val, max_loc, ndvi_best.shape[0], ndvi_best.shape[1])
-                best_match_img = ndvi_best
 
         return optimal_metrics
 
