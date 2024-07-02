@@ -2,7 +2,7 @@ import numpy as np
 
 
 class NaipSampler:
-    def __init__(self, naip_h, naip_w):
+    def __init__(self, naip_h: int, naip_w: int):
         """
         Create an instance of NaipSampler.
         :param naip_h: int, height of the input NAIP imagery
@@ -13,32 +13,34 @@ class NaipSampler:
         self._samples = None
 
     @property
-    def naip_h(self):
+    def naip_h(self) -> int:
         return self._naip_h
 
     @naip_h.setter
-    def naip_h(self, naip_h):
+    def naip_h(self, naip_h: int):
         self._naip_h = naip_h
 
     @property
-    def naip_w(self):
+    def naip_w(self) -> int:
         return self._naip_w
 
     @naip_w.setter
-    def naip_w(self, naip_w):
+    def naip_w(self, naip_w: int):
         self._naip_w = naip_w
 
     @property
     def samples(self):
         return self._samples
 
-    def get_num_of_samples(self):
+    def get_num_of_samples(self) -> int:
         """
         :return: int, number of samples generated
         """
         return self._samples.shape[0]
 
-    def get_random_naip_imagery_samples(self, n_samples_xy=(2, 2), seed=None):
+    def get_random_naip_imagery_samples(self,
+                                        n_samples_xy: tuple = (2, 2),
+                                        seed: int | None = None) -> np.ndarray:
         """
         Generate random slices (samples) of the input NAIP imagery.
         :param n_samples_xy: tuple of int, number of samples along x- and y-axis
@@ -58,7 +60,7 @@ class NaipSampler:
         self._samples = self._make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
         return self._samples
 
-    def get_grid_samples(self):
+    def get_grid_samples(self) -> np.ndarray:
         """
         Divide the NAIP image into grid samples and return the coordinates of
         the top-left and bottom-right of the grid samples.
@@ -77,7 +79,10 @@ class NaipSampler:
         return self._samples
 
     @staticmethod
-    def _make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y):
+    def _make_diagonal_coordinates(top_left_x: np.ndarray,
+                                   top_left_y: np.ndarray,
+                                   bottom_right_x: np.ndarray,
+                                   bottom_right_y: np.ndarray) -> np.ndarray:
         """
         Assemble the coordinates of the top-left and bottom-right corners.
         :param top_left_x: numpy array, x coordinates of the top left corner
