@@ -61,7 +61,8 @@ class NaipSampler:
         self._samples = self._make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
         return self._samples
 
-    def _make_diagonal_coordinates(self, top_left_x, top_left_y, bottom_right_x, bottom_right_y):
+    @staticmethod
+    def _make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y):
         top_left_xy = np.array(np.meshgrid(top_left_x, top_left_y)).T.reshape(-1, 2)
         bottom_right_xy = np.array(np.meshgrid(bottom_right_x, bottom_right_y)).T.reshape(-1, 2)
         diagonal_xy = np.concatenate((top_left_xy, bottom_right_xy), axis=1)
