@@ -11,15 +11,23 @@ import numpy as np
 
 
 class ImageryWaybackDriver:
-    def __init__(self, webdriver):
-        self.webdriver = webdriver
+    def __init__(self, web_driver: webdriver):
+        self.webdriver = web_driver
 
     @staticmethod
-    def make_url(lon, lat, release_num=51423, scale=18):
+    def make_url(lon: float, lat: float, release_num: int = 51423, scale: int = 18) -> str:
+        """
+        Make an url of the Wayback Imagery website.
+        :param lon: float, longitude of the center of the map
+        :param lat: float, latitude of the center of the map
+        :param release_num: int, an integer encoding date of the map
+        :param scale: int, the scale factor for displaying the map
+        :return: str, the url of the map on Wayback Imagery website.
+        """
         return (f"https://livingatlas.arcgis.com/wayback/#active="
                 f"{release_num}&mapCenter={round(lon, 5)}%2C{round(lat, 5)}%2C{scale:d}")
 
-    def load_url(self, url):
+    def load_url(self, url: str):
         # Load the target webpage
         self.webdriver.get(url)
         self.webdriver.fullscreen_window()
@@ -42,7 +50,11 @@ class ImageryWaybackDriver:
          .until(EC.element_to_be_clickable((By.XPATH, '//*[@id="onetrust-accept-btn-handler"]')))
          .click())
 
-    def get_release_dates(self):
+    def get_release_dates(self) -> dict[str, int]:
+        """
+        Get the mapping between dates of the map and the release numbers.
+        :return: dict[str, int], {dates of the map: the release numbers}.
+        """
         # Wait until the list view options appears for parsing release dates of maps
         WebDriverWait(self.webdriver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "py-1")))
 
@@ -59,7 +71,14 @@ class ImageryWaybackDriver:
             date_to_release_num[date.get_text()] = card.attrs['data-release-num']
         return date_to_release_num
 
-    def take_screenshot(self, width, height, save_to_file=None):
+    def take_screenshot(self, width: int, height: int, save_to_file: str = None):
+        """
+        Take screenshot from the Wayback Imagery website.
+        :param width: int, width of the screenshot
+        :param height: int, height of the screenshot
+        :param save_to_file: str, the path to save the screenshot. Default is None.
+        :return: numpy array, the screenshot.
+        """
         # Wait until the page is fully loaded
         WebDriverWait(self.webdriver, 10).until(lambda driver1: driver1.execute_script('return document.readyState') == 'complete')
 
