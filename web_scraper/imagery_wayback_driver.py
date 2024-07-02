@@ -6,7 +6,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import pyscreenshot as imagegrab
 from utility import util
-from utility.util import Point
+from utility.point import Point
 import numpy as np
 
 
