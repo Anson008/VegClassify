@@ -59,31 +59,6 @@ def get_screen_resolution():
     return width, height
 
 
-class Point:
-    def __init__(self, x, y):
-        self._x = x
-        self._y = y
-
-    def __str__(self):
-        return f"Point ({self.x}, {self.y}"
-
-    @property
-    def x(self):
-        return self._x
-
-    @x.setter
-    def x(self, val):
-        self._x = val
-
-    @property
-    def y(self):
-        return self._y
-
-    @y.setter
-    def y(self, val):
-        self._y = val
-
-
 def create_grid(start, stop, num):
     return np.linspace(start, stop, num, endpoint=True)
 
@@ -122,39 +97,6 @@ def get_template_matching_scales(naip_resolution, wayback_resolution, n_points=4
 
 def get_ndvi_thresholds(start, stop, num):
     return np.linspace(start, stop, num, endpoint=True)
-
-
-def get_random_naip_imagery_samples(naip_h, naip_w, n_samples_xy=(2, 2), seed=None):
-    s_w = min(int(naip_w / n_samples_xy[0]), 256)
-    s_h = min(int(naip_h / n_samples_xy[1]), 512)
-
-    rng = np.random.default_rng(seed)
-    top_left_x = rng.integers(0, naip_w - s_w, n_samples_xy[0], dtype=np.int32)
-    top_left_y = rng.integers(0, naip_h - s_h, n_samples_xy[1], dtype=np.int32)
-
-    bottom_right_x = top_left_x + s_w
-    bottom_right_y = top_left_y + s_h
-
-    return make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
-
-
-def get_grid_center(naip_h, naip_w):
-    block_h = 512 if naip_h >= 512 else naip_h
-    block_w = 256 if naip_w >= 256 else naip_w
-
-    bottom_right_x = np.arange(block_w, naip_w, block_w, dtype=np.int32)
-    bottom_right_y = np.arange(block_h, naip_h, block_h, dtype=np.int32)
-    top_left_x = bottom_right_x - block_w
-    top_left_y = bottom_right_y - block_h
-
-    return make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
-
-
-def make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y):
-    top_left_xy = np.array(np.meshgrid(top_left_x, top_left_y)).T.reshape(-1, 2)
-    bottom_right_xy = np.array(np.meshgrid(bottom_right_x, bottom_right_y)).T.reshape(-1, 2)
-    diagonal_xy = np.concatenate((top_left_xy, bottom_right_xy), axis=1)
-    return diagonal_xy
 
 
 def read_naip_image(image_path):
@@ -240,25 +182,6 @@ def get_image_center(top_left, bottom_right):
     return (bx - tx) // 2, (by - ty) // 2
 
 
-def match_template(ground_truth_mask, naip_mask, naip_resolution, wayback_resolution):
-    tm_scales = get_template_matching_scales(naip_resolution, wayback_resolution)
-    global_max = float('-inf')
-    optimal_metrics = tuple()
-    for i, scale in enumerate(tm_scales):
-        ndvi_best = cv2.resize(naip_mask.copy(),
-                               dsize=(0, 0),
-                               fx=scale,
-                               fy=scale,
-                               interpolation=cv2.INTER_CUBIC)
-        similarity_res = cv2.matchTemplate(ground_truth_mask, ndvi_best, cv2.TM_CCOEFF_NORMED)
-        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(similarity_res)
-        if max_val > global_max:
-            global_max = max_val
-            optimal_metrics = (max_val, max_loc, ndvi_best)
-
-    return optimal_metrics
-
-
 def draw_template_match_region(wayback_shot_path, tm_info_path):
     wayback_shot_file_obj = os.scandir(wayback_shot_path)
     tm_info = np.load(tm_info_path)
@@ -322,15 +245,3 @@ def get_confusion_matrix(naip_mask_path, ground_truth_mask_path, tm_info_path):
     with open("./cache/confusion_matrix.json", "w+") as outfile:
         outfile.write(json.dumps(cm, indent=4))
     return cm
-
-
-if __name__ == '__main__':
-    # in_dir = "./cache/naip_split/"
-    # out_dir = "./cache/naip_merged/"
-    # stitch_images(in_dir, out_dir)
-
-    samples = get_random_naip_imagery_samples(512, 1024, (2, 4), 101)
-    print(samples)
-    print(samples.shape)
-
-
