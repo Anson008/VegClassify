@@ -3,6 +3,11 @@ import numpy as np
 
 class NaipSampler:
     def __init__(self, naip_h, naip_w):
+        """
+        Create an instance of NaipSampler.
+        :param naip_h: int, height of the input NAIP imagery
+        :param naip_w: int, width of the input NAIP imagery
+        """
         self._naip_h = naip_h
         self._naip_w = naip_w
         self._samples = None
@@ -28,9 +33,19 @@ class NaipSampler:
         return self._samples
 
     def get_num_of_samples(self):
+        """
+        :return: int, number of samples generated
+        """
         return self._samples.shape[0]
 
     def get_random_naip_imagery_samples(self, n_samples_xy=(2, 2), seed=None):
+        """
+        Generate random slices (samples) of the input NAIP imagery.
+        :param n_samples_xy: tuple of int, number of samples along x- and y-axis
+        :param seed: int, random seed for reproducibility. Default is None.
+        :return: numpy array of shape (n_samples, 4). Each row is the coordinates of top-left and bottom-right corners
+                (tl_x, tl_y, br_x, br_y).
+        """
         s_w = min(int(self._naip_w / n_samples_xy[0]), 256)
         s_h = min(int(self._naip_h / n_samples_xy[1]), 512)
 
@@ -63,6 +78,14 @@ class NaipSampler:
 
     @staticmethod
     def _make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y):
+        """
+        Assemble the coordinates of the top-left and bottom-right corners.
+        :param top_left_x: numpy array, x coordinates of the top left corner
+        :param top_left_y: numpy array, y coordinates of the top left corner
+        :param bottom_right_x: numpy array, x coordinates of the bottom right corner
+        :param bottom_right_y: numpy array, y coordinates of the bottom right corner
+        :return: numpy array of shape (n_samples, 4). Each row is the coordinates of top-left and bottom-right corners.
+        """
         top_left_xy = np.array(np.meshgrid(top_left_x, top_left_y)).T.reshape(-1, 2)
         bottom_right_xy = np.array(np.meshgrid(bottom_right_x, bottom_right_y)).T.reshape(-1, 2)
         diagonal_xy = np.concatenate((top_left_xy, bottom_right_xy), axis=1)
