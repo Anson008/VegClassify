@@ -38,9 +38,7 @@ class NaipSampler:
         """
         return self._samples.shape[0]
 
-    def get_random_naip_imagery_samples(self,
-                                        n_samples_xy: tuple = (2, 2),
-                                        seed: int | None = None) -> np.ndarray:
+    def get_random_samples(self, n_samples_xy: tuple = (2, 2), seed: int | None = None) -> np.ndarray:
         """
         Generate random slices (samples) of the input NAIP imagery.
         :param n_samples_xy: tuple of int, number of samples along x- and y-axis
