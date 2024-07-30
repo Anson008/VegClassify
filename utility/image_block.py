@@ -5,7 +5,9 @@ class ImageBlock:
     def __init__(self, diagonal_xy: np.ndarray):
         """
         Create an instance of ImageBlock
-        :param diagonal_xy: numpy array of shape (4, ) representing (tx, ty, bx, by).
+        :param diagonal_xy: numpy array of shape (4, ) representing (tx, ty, bx, by),
+        which are top-left and bottom-right coordinates in the original image from which
+        the image block is sliced.
         """
         self._top_left_x = diagonal_xy[0]
         self._top_left_y = diagonal_xy[1]
@@ -40,7 +42,7 @@ class ImageBlock:
 
     def get_relative_center(self) -> tuple[int, int]:
         """
-        Get the center (x, y) coordinates of an image block.
+        Get the center (x, y) coordinates of the image block.
         :return: tuple of int, (x, y).
         """
         x = (self.bottom_right_x - self.top_left_x) // 2
@@ -49,7 +51,7 @@ class ImageBlock:
 
     def get_absolute_center(self) -> tuple[int, int]:
         """
-        Get the center (x, y) coordinates of an image block in the original image (from which the block is cut) space.
+        Get the center (x, y) coordinates of the image block in the original image (from which the block is cut) space.
         :return: tuple of int, (x, y).
         """
         x, y = self.get_relative_center()
