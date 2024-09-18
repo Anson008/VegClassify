@@ -1,3 +1,4 @@
+import json
 import os
 import cv2
 import numpy as np
@@ -5,7 +6,7 @@ import utility
 import matplotlib.pyplot as plt
 from morphology.filter_factory import FilterFactory
 from morphology.connected_components import CV2ConnectedComponentsGenerator, ConnectedComponents
-from ndvi.naip_processor import NAIPProcessor
+from ndvi.naip_processor import NAIPImagery
 from web_scraper.imagery_wayback_driver import ImageryWaybackDriver
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -38,21 +39,10 @@ def clean_cache():
     util.remove_all_files(util.GROUND_TRUTH_IMAGES_DIR)
 
 
-def match_naip_to_ground_truth(naip_mask_path, ground_truth_mask_path):
-    naip_file_obj = os.scandir(naip_mask_path)
-    ground_truth_file_obj = os.scandir(ground_truth_mask_path)
-
-    for naip, gt in zip(naip_file_obj, ground_truth_file_obj):
-        if naip.name.endswith(".png") and gt.name.endswith(".png"):
-            naip_mask = cv2.imread(os.path.join(naip_mask_path, naip.name))
-            gt_mask = cv2.imread(os.path.join(ground_truth_mask_path, gt.name))
-
-
 def generate_sample_ground_truth(config_path, checkpoint_path, naip_img_path, wayback_scale=18):
     # Create a NAIP processor
     naip_img = util.read_naip_image(naip_img_path)
-    naip = NAIPProcessor(naip_img)
-    naip_resolution = abs(naip.get_resolution()[0])
+    naip = NAIPImagery(naip_img)
     naip_bgr = naip.get_bgr_naip()
 
     # Initialize Selenium driver
@@ -60,14 +50,17 @@ def generate_sample_ground_truth(config_path, checkpoint_path, naip_img_path, wa
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     # options.binary_location = util.SELENIUM_DRIVER_BINARY_LOC
 
-    # Get a screenshot of the region of interest
+    # Get NAIP size and resolution
     naip_h, naip_w = naip_bgr.shape[:2]
+    naip_resolution = abs(naip.get_resolution()[0])
+
+    # Get Wayback resolution
     wayback_resolution = util.WAYBACK_SCALE_TO_RESOLUTION[str(wayback_scale)]
 
     # naip_sample_xy = utility.get_random_naip_imagery_samples(naip_h, naip_w, n_samples_xy, seed=9527)
     naip_sampler = NaipSampler(naip_h, naip_w)
     naip_sample_xy = naip_sampler.get_grid_samples()
-    print(f"Number of blocks: {naip_sampler.get_num_of_samples()}")
+    print(f"Number of sample blocks: {naip_sampler.get_num_of_samples()}")
     n_digits = len(str(naip_sampler.get_num_of_samples()))
     # print(f"Number of digits: {n_digits}")
     np.save("./cache/naip_random_sample_coordinates.npy", naip_sample_xy)
@@ -75,7 +68,8 @@ def generate_sample_ground_truth(config_path, checkpoint_path, naip_img_path, wa
     # Initialize DeepGreen model
     deep_green = DeepGreenSpaceRecognizer(config_path, checkpoint_path)
 
-    for i, diagonal_xy in enumerate(naip_sample_xy):
+    i = 0
+    for diagonal_xy in naip_sample_xy:
 
         image_block = ImageBlock(diagonal_xy)
         center_abs_x, center_abs_y = image_block.get_absolute_center()
@@ -92,9 +86,9 @@ def generate_sample_ground_truth(config_path, checkpoint_path, naip_img_path, wa
 
         s_h, s_w = image_block.get_block_size()
         wayback_h, wayback_w = util.get_wayback_shot_size((s_h, s_w),
-                                                             naip_resolution,
-                                                             wayback_resolution,
-                                                             beta=1.1)
+                                                          naip_resolution,
+                                                          wayback_resolution,
+                                                          beta=1.1)
         # print(f"Wayback shot size: {wayback_h, wayback_w}")
         driver = webdriver.Chrome(options=options)
         wayback_driver = ImageryWaybackDriver(driver)
@@ -122,17 +116,18 @@ def generate_sample_ground_truth(config_path, checkpoint_path, naip_img_path, wa
         #         ground_truth_seg_binary)
 
         ground_truth_gray = ground_truth_seg.astype(np.uint8)
-        ground_truth_color = NAIPProcessor.set_mask_color(ground_truth_gray, (0, 0, 255))
+        ground_truth_color = NAIPImagery.set_mask_color(ground_truth_gray, (0, 0, 255))
         combined_ground_truth = cv2.addWeighted(wayback_img, 1, ground_truth_color, 0.5, 0)
         cv2.imwrite(os.path.join(util.GROUND_TRUTH_MASKS_DIR, f"ground_truth_mask_{str(i + 1).zfill(n_digits)}.png"),
                     ground_truth_gray)
         cv2.imwrite(os.path.join(util.GROUND_TRUTH_IMAGES_DIR, f"ground_truth_image_{str(i + 1).zfill(n_digits)}.png"),
                     combined_ground_truth)
+        i += 1
 
 
 def generate_naip_vegetation_masks(naip_img_path: str, coordinate_file_path: str, ndvi_threshold: float):
     naip_img = util.read_naip_image(naip_img_path)
-    naip_processor = NAIPProcessor(naip_img)
+    naip_processor = NAIPImagery(naip_img)
     sample_coordinates = np.load(coordinate_file_path)
     n_samples = sample_coordinates.shape[0]
     n_digits = len(str(n_samples))
@@ -169,7 +164,7 @@ def generate_ground_truth(input_dir, config_path, checkpoint_path):
         ground_truth_seg = deep_green.infer_batch([image])[0]
         _, ground_truth_gray = cv2.threshold(ground_truth_seg, 0, 255, cv2.THRESH_BINARY)
         ground_truth_gray = ground_truth_gray.astype(np.uint8)
-        ground_truth_color = NAIPProcessor.set_mask_color(ground_truth_gray, (0, 0, 255))
+        ground_truth_color = NAIPImagery.set_mask_color(ground_truth_gray, (0, 0, 255))
         combined_ground_truth = cv2.addWeighted(image, 1, ground_truth_color, 0.5, 0)
         cv2.imwrite(os.path.join("./cache/ground_truth_masks/", f"ground_truth_mask_{str(i).zfill(n_digits)}.png"), ground_truth_gray)
         cv2.imwrite(os.path.join("./cache/ground_truth_images/", f"ground_truth_image_{str(i).zfill(n_digits)}.png"), combined_ground_truth)
@@ -185,9 +180,6 @@ if __name__ == '__main__':
     # create_cache()
     # clean_cache()
     # generate_sample_ground_truth(config_path, checkpoint_path, naip_img_path, wayback_scale=18)
-    #
-    # coordinate_file_path = "./cache/naip_random_sample_coordinates.npy"
-    # generate_naip_vegetation_masks(naip_img_path, coordinate_file_path, 0.1)
 
     # naip_img = util.read_naip_image(naip_img_path)
     # naip_processor = NAIPProcessor(naip_img)
@@ -195,11 +187,28 @@ if __name__ == '__main__':
     #                                                  util.WAYBACK_SCREENSHOTS_DIR,
     #                                                  util.WAYBACK_SCALE_TO_RESOLUTION["18"])
 
+    coordinate_file_path = "./cache/naip_random_sample_coordinates.npy"
     tm_info_path = "./cache/tm_info.npy"
-    # util.draw_template_match_region(util.WAYBACK_SCREENSHOTS_DIR, tm_info_path)
+    thresholds = np.arange(0.08, 0.4, 0.02)
+    metric_name = "kappa"
+    max_metric_value = 0
+    cm_outfile_name = f"confusion_matrix_{metric_name}.json"
+    for threshold in thresholds:
+        util.remove_all_files(util.NAIP_SAMPLE_MASKS_DIR)
+        generate_naip_vegetation_masks(naip_img_path, coordinate_file_path, threshold)
 
-    cm = util.get_confusion_matrix(util.NAIP_SAMPLE_MASKS_DIR, util.GROUND_TRUTH_MASKS_DIR, tm_info_path)
-    print(f"Confusion matrix: {cm}")
+        # util.draw_template_match_region(util.WAYBACK_SCREENSHOTS_DIR, tm_info_path)
+        print(f"Current threshold: {threshold}")
+        cm = util.get_confusion_matrix(util.NAIP_SAMPLE_MASKS_DIR, util.GROUND_TRUTH_MASKS_DIR, tm_info_path)
+        print(f"Current metric ({metric_name}) value: {cm[metric_name]}")
+
+        if cm[metric_name] > max_metric_value:
+            print("Updating best metric value...")
+            max_metric_value = cm[metric_name]
+            print(f"Best threshold so far: {threshold}")
+            with open(f"./cache/{cm_outfile_name}", "w+") as outfile:
+                outfile.write(json.dumps(cm, indent=4))
+            print(f"Best metric value ({metric_name}) so far: {cm[metric_name]}")
 
     # main(config_path, checkpoint_path, naip_img_path, n_samples_xy=(8, 10))
     #

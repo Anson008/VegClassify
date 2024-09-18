@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import math
 import json
-from ndvi.naip_processor import NAIPProcessor
+from ndvi.naip_processor import NAIPImagery
 
 
 class ConnectedComponents:
@@ -220,11 +220,11 @@ class ConnectedComponentsProcessor:
 
 if __name__ == "__main__":
     img_path = "../image/m_4111118_nw_12_060_20210813_Clip.tif"
-    naip = NAIPProcessor(img_path)
+    naip = NAIPImagery(img_path)
     naip_bgr = naip.get_bgr_naip()
     naip_reprojected = naip.reproject("EPSG:4326")
-    ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
-    ndvi_classified = NAIPProcessor.classify(ndvi, 0.2, invert=True)
+    ndvi = NAIPImagery.calculate_ndvi(naip_reprojected)
+    ndvi_classified = NAIPImagery.classify(ndvi, 0.2, invert=True)
     cv2_cc_generator = CV2ConnectedComponentsGenerator(ndvi_classified, 8)
     cc_results = cv2_cc_generator.generate()
 

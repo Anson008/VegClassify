@@ -1,7 +1,7 @@
 import cv2
 from abc import ABC, abstractmethod
 from morphology.connected_components import ConnectedComponents, CV2ConnectedComponentsGenerator
-from ndvi.naip_processor import NAIPProcessor
+from ndvi.naip_processor import NAIPImagery
 import numpy as np
 
 
@@ -160,28 +160,3 @@ class AndCriteria:
     def apply_criteria(self, cc_result):
         temp = self._criteria1.apply(cc_result)
         return self._criteria2.apply(temp)
-
-
-if __name__ == "__main__":
-    img_path = "../image/m_4111118_nw_12_060_20210813_Clip.tif"
-    naip = NAIPProcessor(img_path)
-    naip_rgb = naip.get_rgb_naip()
-    naip_reprojected = naip.reproject("EPSG:4326")
-    ndvi = NAIPProcessor.calculate_ndvi(naip_reprojected)
-    ndvi_classified = NAIPProcessor.classify(ndvi, 0.11)
-    cc_generator = CV2ConnectedComponentsGenerator(ndvi_classified, 8)
-    cc_res = cc_generator.generate()
-    cc_obj = ConnectedComponents(cc_res)
-    area_stats = cc_obj.summary_statistics()
-    # print(area_stats.round(2))
-
-    not_less_than = GreaterThanOrEqualToCriteria("area", 100)
-    cc_area_gteq_100 = not_less_than.apply(cc_obj)
-    filtered_stats = cc_area_gteq_100.summary_statistics()
-    print(filtered_stats)
-
-    criteria1 = GreaterThanOrEqualToCriteria("height", 10)
-    criteria2 = LessThanOrEqualToCriteria("width", 30)
-    criteria3 = AndCriteria(criteria1, criteria2)
-    res3 = criteria3.apply_criteria(cc_obj)
-    print(res3.summary_statistics())

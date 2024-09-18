@@ -9,13 +9,16 @@ import math
 import xarray as xr
 
 
-class NAIPProcessor:
+class NAIPImagery:
 
     def __init__(self, naip_img: xr.DataArray):
         """
         :param naip_img: xarray.DataArray, the input NAIP image
         """
         self._naip_img = naip_img
+
+    def __getitem__(self, index):
+        return NAIPImagery(self._naip_img[index])
 
     @property
     def naip_img(self) -> xr.DataArray:
@@ -65,9 +68,9 @@ class NAIPProcessor:
         """
         tx, ty = top_left
         bx, by = bottom_right
-        naip_slice = NAIPProcessor(self._naip_img[:, ty:by+1, tx:bx+1])
-        center_row, center_col = naip_slice.get_center()
-        return naip_slice.get_lon_lat(row=center_row, col=center_col)
+        naip_roi = self[:, ty:by+1, tx:bx+1]
+        center_row, center_col = naip_roi.get_center()
+        return naip_roi.get_lon_lat(row=center_row, col=center_col)
 
     def get_resolution(self) -> tuple[int, int]:
         """
@@ -263,13 +266,16 @@ if __name__ == "__main__":
     img_path = "../image/m_4111118_nw_12_060_20210813.tif"
 
     naip_img = util.read_naip_image(img_path)
-    naip = NAIPProcessor(naip_img)
+    naip = NAIPImagery(naip_img)
     # naip.split_image(1024, 512)
     # shape = naip.naip_img.rio.get_gcps()
     # print(type(shape))
     # print(shape)
-    ll = naip.get_resolution()
-    print(type(ll))
+    print(f"Original NAIP shape: {naip.naip_img.shape}")
+    naip_slice = naip[:, :100, :100]
+    print(f"Slice type: {type(naip_slice)}")
+    print(f"Sliced NAIP shape: {naip_slice.naip_img.shape}")
+    print(naip_slice.get_center_lon_lat((0, 0), (90, 90)))
 
 
 
