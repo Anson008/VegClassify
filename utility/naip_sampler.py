@@ -65,7 +65,7 @@ class NaipSampler:
         :return: np.ndarray of shape (n_samples, 4).
         [top_left_x, top_left_y, bottom_right_x, bottom_right_y]. The block includes the bottom_right coordinates.
         """
-        block_h = 512 if self.naip_h >= 512 else self.naip_h
+        block_h = 1024 if self.naip_h >= 1024 else self.naip_h
         block_w = 512 if self.naip_w >= 512 else self.naip_w
 
         top_left_x = np.arange(0, self.naip_w - block_w, block_w, dtype=np.int32)
