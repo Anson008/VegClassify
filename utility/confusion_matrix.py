@@ -1,0 +1,49 @@
+class ConfusionMatrix:
+    def __init__(self):
+        self._tp = 0
+        self._fp = 0
+        self._tn = 0
+        self._fn = 0
+        self.confusion_matrix = {"tp": 0, "fp": 0, "tn": 0, "fn": 0, "kappa": 0}
+
+    @property
+    def tp(self):
+        return self._tp
+
+    @tp.setter
+    def tp(self, value):
+        self._tp = value
+
+    @property
+    def fp(self):
+        return self._fp
+
+    @fp.setter
+    def fp(self, value):
+        self._fp = value
+
+    @property
+    def tn(self):
+        return self._tn
+
+    @tn.setter
+    def tn(self, value):
+        self._tn = value
+
+    @property
+    def fn(self):
+        return self._fn
+
+    @fn.setter
+    def fn(self, value):
+        self._fn = value
+
+    def get_kappa(self):
+        numerator = self._tp * self._tn - self._fp * self._fn
+        denominator = ((self._tp + self._fp) * (self._fp + self._tn) +
+                       (self._tp + self._fn) * (self._fn + self._tn))
+        return 2.0 * numerator / denominator
+
+    def get_accuracy(self):
+        return 1.0 * (self._tp + self._tn) / (self._tp + self._fp + self._tn + self._fn)
+

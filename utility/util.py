@@ -5,6 +5,8 @@ import cv2
 import json
 import numpy as np
 import rioxarray as rxr
+# import constants as const
+from utility.confusion_matrix import ConfusionMatrix
 
 # Constants
 BETA = 1.1
@@ -22,7 +24,7 @@ NAIP_BEST_MATCH_DIR = "./cache/naip_best_match/"
 GROUND_TRUTH_MASKS_BINARY_DIR = "./cache/ground_truth_masks_binary/"
 NAIP_MASKS_BINARY_DIR = "./cache/naip_masks_binary/"
 TM_MATCH_INFO = "./cache/tm_match_info/"
-TEMPLATE_MATCH_REGION = "./cache/template_match_region/"
+TEMPLATE_MATCH_REGION_DIR = "./cache/template_match_region/"
 BEST_MATCH_IMG_DIR = "./cache/best_match_img/"
 
 
@@ -108,25 +110,37 @@ def read_naip_image(image_path):
     return naip
 
 
+def is_directory_exists(directory):
+    return os.path.exists(directory)
+
+
 def create_directory(directory):
     if not os.path.exists(directory):
         try:
             os.makedirs(directory)
+            return True
         except OSError as err:
             print(err)
+            return False
+    else:
+        print("Directory already exists.")
+        return False
 
 
 def remove_all_files(directory):
     if len(os.listdir(directory)) == 0:
-        return
+        print("Directory is empty.")
+        return True
     try:
         with os.scandir(directory) as entries:
             for entry in entries:
                 if entry.is_file():
                     os.unlink(entry.path)
-        print(f"All cached NAIP crops are deleted at {directory}")
+        print(f"All files are deleted in {directory}")
+        return True
     except OSError as err:
         print(err)
+        return False
 
 
 def naip_to_bgr(naip_img):
@@ -197,13 +211,49 @@ def draw_template_match_region(wayback_shot_path, tm_info_path):
             _, ox, oy, h, w = tm_param
             cv2.rectangle(wayback_img, (int(ox), int(oy)), (int(ox + w), int(oy + h)), (0, 255, 255), 3)
             out_filename = f"template_match_region_{i + 1}.png"
-            cv2.imwrite(os.path.join(TEMPLATE_MATCH_REGION, out_filename), wayback_img)
+            cv2.imwrite(os.path.join(TEMPLATE_MATCH_REGION_DIR, out_filename), wayback_img)
+
+
+def get_confusion_matrix_on_naip(naip_mask_path, ground_truth_mask_path):
+    naip_file_obj = os.scandir(naip_mask_path)
+    gt_file_obj = os.scandir(ground_truth_mask_path)
+    cm_obj = ConfusionMatrix()
+
+    for naip_mask, gt_mask in zip(naip_file_obj, gt_file_obj):
+
+        naip_mask_img = cv2.imread(os.path.join(naip_mask_path, naip_mask.name))
+        gt_mask_img = cv2.imread(os.path.join(ground_truth_mask_path, gt_mask.name))
+
+        # Accumulate TP and TN
+        gt_and_naip = np.logical_and(gt_mask_img, naip_mask_img)
+        n_tp = np.sum(gt_and_naip).astype(np.int64)
+        cm_obj.tp += n_tp
+        cm_obj.tn += gt_and_naip.size - n_tp
+
+        # Accumulate FP and FN
+        cm_obj.fp += np.sum(np.logical_and(np.logical_not(gt_mask_img), naip_mask_img)).astype(np.int64)
+        cm_obj.fn += np.sum(np.logical_and(gt_mask_img, np.logical_not(naip_mask_img))).astype(np.int64)
+
+    # kappa = 2.0 * (tp * tn - fp * fn) / ((tp + fp) * (fp + tn) + (tp + fn) * (fn + tn))
+    # accuracy = 1.0 * (tp + tn) / (tp + fp + tn + fn)
+    cm_obj.confusion_matrix["kappa"] = cm_obj.get_kappa()
+    cm_obj.confusion_matrix["accuracy"] = cm_obj.get_accuracy()
+
+    # cm["tp"] = int(tp)
+    # cm["fp"] = int(fp)
+    # cm["tn"] = int(tn)
+    # cm["fn"] = int(fn)
+    # cm["kappa"] = float(kappa)
+    # cm["accuracy"] = float(accuracy)
+
+    return cm_obj.confusion_matrix
 
 
 def get_confusion_matrix(naip_mask_path, ground_truth_mask_path, tm_info_path):
     naip_file_obj = os.scandir(naip_mask_path)
     gt_file_obj = os.scandir(ground_truth_mask_path)
     tm_info = np.load(tm_info_path).tolist()
+
     cm = {"tp": 0, "fp": 0, "tn": 0, "fn": 0, "kappa": 0}
     tp, fp, tn, fn, kappa = 0, 0, 0, 0, 0
 
@@ -235,13 +285,21 @@ def get_confusion_matrix(naip_mask_path, ground_truth_mask_path, tm_info_path):
         fn += np.sum(np.logical_and(gt_matched_mask, np.logical_not(naip_matched_mask))).astype(np.int64)
 
     kappa = 2.0 * (tp * tn - fp * fn) / ((tp + fp) * (fp + tn) + (tp + fn) * (fn + tn))
+    accuracy = 1.0 * (tp + tn) / (tp + fp + tn + fn)
 
     cm["tp"] = int(tp)
     cm["fp"] = int(fp)
     cm["tn"] = int(tn)
     cm["fn"] = int(fn)
     cm["kappa"] = float(kappa)
+    cm["accuracy"] = float(accuracy)
 
-    with open("./cache/confusion_matrix.json", "w+") as outfile:
-        outfile.write(json.dumps(cm, indent=4))
     return cm
+
+
+def load_npy_file(file_path):
+    try:
+        return np.load(file_path)
+    except OSError or ValueError or EOFError as err:
+        print(err)
+
