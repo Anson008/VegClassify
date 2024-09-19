@@ -1,0 +1,44 @@
+[cache]
+    [cache.naip]
+    naip_split_dir = "./cache/naip_split/"
+    naip_random_samples_dir = "./cache/naip_random_samples/"
+    naip_sample_masks_dir = "./cache/naip_random_sample_masks/"
+    naip_best_match_dir = "./cache/naip_best_match/"
+    naip_masks_binary_dir = "./cache/naip_masks_binary/"
+
+    [cache.ground_truth]
+    ground_truth_masks_dir = "./cache/ground_truth_masks/"
+    ground_truth_images_dir = "./cache/ground_truth_images/"
+    ground_truth_masks_binary_dir = "./cache/ground_truth_masks_binary/"
+
+    [cache.template_match]
+    tm_info_dir = "./cache/tm_match_info/"
+    tm_region_dir = "./cache/template_match_region/"
+    best_match_img_dir = "./cache/best_match_img/"
+
+    [cache.wayback_screenshot]
+    wayback_screenshots_dir = "./cache/wayback_screenshots/"
+
+[constant]
+screenshot_factor = 1.1
+
+
+[wayback]
+    [wayback.scale16]
+    scale = 16
+    resolution = 0.9843
+
+    [wayback.scale17]
+    scale = 17
+    resolution = 0.4474
+
+    [wayback.scale18]
+    scale = 18
+    resolution = 0.2237
+
+[selenium]
+driver_binary_dir = "C:/Program Files/ChromeDriver/chromedriver.exe"
+
+[opencv]
+    [opencv.template_match]
+    methods = ['cv2.TM_CCOEFF_NORMED', 'cv2.TM_CCORR_NORMED', 'cv2.TM_SQDIFF_NORMED']
