@@ -22,6 +22,7 @@
 1. [Locating Elements](https://selenium-python.readthedocs.io/locating-elements.html#locating-by-xpath)
 2. [How to use regular expressions in xpath in Selenium with python?](https://www.tutorialspoint.com/how-to-use-regular-expressions-in-xpath-in-selenium-with-python)
 3. [Page Object Model and Page Factory in Selenium Python](https://www.browserstack.com/guide/page-object-model-in-selenium-python)
+4. [Selenium with Python](https://selenium-python.readthedocs.io/index.html)
 
 ### Geospatial Raster Data
 1. [Rioxarray Documentation](https://corteva.github.io/rioxarray/stable/index.html)
@@ -43,3 +44,5 @@
 4. [EarthPy Documentation](https://earthpy.readthedocs.io/en/latest/index.html)
 5. [What are the ranges to recognize different colors in RGB space?](https://stackoverflow.com/questions/42882498/what-are-the-ranges-to-recognize-different-colors-in-rgb-space)
 6. [Getting Display resolution with python isn't accurate](https://stackoverflow.com/questions/73268410/getting-display-resolution-with-python-isnt-accurate)
+7. [Compute Confusion Matrix](https://desktop.arcgis.com/en/arcmap/latest/tools/spatial-analyst-toolbox/compute-confusion-matrix.htm)
+8. [Cohen's kappa](https://en.wikipedia.org/wiki/Cohen%27s_kappa)
