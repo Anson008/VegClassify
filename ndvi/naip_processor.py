@@ -158,25 +158,30 @@ class NAIPImagery:
                       title=title)
         plt.show()
 
-    def split_image(self, split_height: int, split_width: int) -> None:
+    def split_image(self, des_path: str, split_height: int, split_width: int) -> None:
         """
         Split the NAIP image into blocks of size (split_height, split_width). Blocks of smaller size are kept as-is.
+        :param des_path: str, the output directory of the split images
         :param split_height: int, height of the blocks
         :param split_width: int, width of the blocks
         :return: None
         """
-        util.create_directory(util.NAIP_SPLIT_DIR)
-        util.remove_all_files(util.NAIP_SPLIT_DIR)
-        input_image = self.get_bgr_naip()
-        h, w = input_image.shape[:2]
-        splits = [input_image[y:y + split_height, x:x + split_width]
-                  for y in range(0, h, split_height)
-                  for x in range(0, w, split_width)]
-        n_digits = len(str(len(splits)))
-        for i, split in enumerate(splits):
-            if split is not None:
-                filename = f"naip_split_rowSize{math.ceil(w / split_width)}_{str(i).zfill(n_digits)}.png"
-                cv2.imwrite(os.path.join(util.NAIP_SPLIT_DIR, filename), split)
+        is_created = util.create_directory(des_path)
+        is_empty = False
+        if not is_created:
+            is_empty = util.remove_all_files(des_path)
+
+        if is_empty:
+            input_image = self.get_bgr_naip()
+            h, w = input_image.shape[:2]
+            splits = [input_image[y:y + split_height, x:x + split_width]
+                      for y in range(0, h, split_height)
+                      for x in range(0, w, split_width)]
+            n_digits = len(str(len(splits)))
+            for i, split in enumerate(splits):
+                if split is not None:
+                    filename = f"naip_split_rowSize{math.ceil(w / split_width)}_{str(i).zfill(n_digits)}.png"
+                    cv2.imwrite(os.path.join(des_path, filename), split)
 
     def generate_vegetation_mask(self,
                                  top_left: tuple[int, int],
@@ -194,7 +199,7 @@ class NAIPImagery:
         """
         tx, ty = top_left
         bx, by = bottom_right
-        img_block = self._naip_img[:, ty:by+1, tx:bx+1]
+        img_block = self._naip_img[:, ty:by, tx:bx]
         ndvi = self.calculate_ndvi(img_block)
         return self.classify(ndvi, threshold, invert)
 
@@ -267,15 +272,15 @@ if __name__ == "__main__":
 
     naip_img = util.read_naip_image(img_path)
     naip = NAIPImagery(naip_img)
-    # naip.split_image(1024, 512)
-    # shape = naip.naip_img.rio.get_gcps()
-    # print(type(shape))
-    # print(shape)
-    print(f"Original NAIP shape: {naip.naip_img.shape}")
-    naip_slice = naip[:, :100, :100]
-    print(f"Slice type: {type(naip_slice)}")
-    print(f"Sliced NAIP shape: {naip_slice.naip_img.shape}")
-    print(naip_slice.get_center_lon_lat((0, 0), (90, 90)))
+    naip.split_image(util.NAIP_SPLIT_DIR, 1024, 512)
+    shape = naip.naip_img.rio.get_gcps()
+    print(type(shape))
+    print(shape)
+    # print(f"Original NAIP shape: {naip.naip_img.shape}")
+    # naip_slice = naip[:, :100, :100]
+    # print(f"Slice type: {type(naip_slice)}")
+    # print(f"Sliced NAIP shape: {naip_slice.naip_img.shape}")
+    # print(naip_slice.get_center_lon_lat((0, 0), (90, 90)))
 
 
 
