@@ -130,9 +130,11 @@ def generate_sample_ground_truth(config_path, checkpoint_path, naip_img_path, wa
 def generate_naip_vegetation_masks(naip_img_path: str,
                                    coordinate_file_path: str,
                                    naip_output_mask_path: str,
+                                   naip_output_land_cover_path: str,
                                    ndvi_threshold: float):
     naip_img = util.read_naip_image(naip_img_path)
     naip_processor = NAIPImagery(naip_img)
+    naip_bgr_img = naip_processor.get_bgr_naip()
     sample_coordinates = np.load(coordinate_file_path)
     n_samples = sample_coordinates.shape[0]
     n_digits = len(str(n_samples))
@@ -145,11 +147,16 @@ def generate_naip_vegetation_masks(naip_img_path: str,
         # out_path = os.path.join(util.NAIP_MASKS_BINARY_DIR, out_filename)
         # np.save(out_path, mask_binary)
 
+        naip_image = naip_bgr_img[ty:by, tx:bx, :]
+        vegetation_cover = naip_processor.generate_vegetation_cover(mask, naip_image)
+        out_filename = f"naip_vegetation_cover_{str(i + 1).zfill(n_digits)}.png"
+        out_path = os.path.join(naip_output_land_cover_path, out_filename)
+        cv2.imwrite(out_path, vegetation_cover)
+
         mask[mask != 0] = 255
         out_filename = f"naip_mask_{str(i + 1).zfill(n_digits)}.png"
         out_path = os.path.join(naip_output_mask_path, out_filename)
         cv2.imwrite(out_path, mask)
-
 
 def generate_ground_truth(input_dir, config_path, checkpoint_path):
     try:
@@ -242,7 +249,7 @@ def generate_ground_truth_from_rgb_naip(naip_sample_xy: numpy.ndarray,
         i += 1
 
 
-def find_optimal_ndvi_by_naip():
+def find_optimal_ndvi_by_naip(metrics_name):
     # Set model configuration path and checkpoint path
     config_path = "./configs/fcn_aux-hr48_256x512_80k_singlegreen.py"
     checkpoint_path = "./checkpoints/iter_1000.pth"
@@ -260,7 +267,6 @@ def find_optimal_ndvi_by_naip():
     #                                     "./cache/ground_truth_image1/")
 
     thresholds = np.arange(0, 0.4, 0.02)
-    metrics_name = "kappa"
     max_metric_value = 0
     cm_outfile_name = f"confusion_matrix_{metrics_name}_on_naip.json"
 
@@ -314,7 +320,22 @@ if __name__ == '__main__':
     #                                     "./cache/ground_truth_mask1/",
     #                                     "./cache/ground_truth_image1/")
 
-    find_optimal_ndvi_by_naip()
+    # find_optimal_ndvi_by_naip("accuracy")
+
+    config_path = "./configs/fcn_aux-hr48_256x512_80k_singlegreen.py"
+    checkpoint_path = "./checkpoints/iter_1000.pth"
+    naip_path = "./image/m_4111118_nw_12_060_20210813.tif"
+
+    coordinate_file_path = "./cache/naip_sample_xy.npy"
+    naip_best_mask_output_path = "./cache/naip_best_match/"
+    naip_best_cover_output_path = "./cache/naip_best_land_cover/"
+    generate_naip_vegetation_masks(naip_path,
+                                   coordinate_file_path,
+                                   naip_best_mask_output_path,
+                                   naip_best_cover_output_path,
+                                   0.14)
+
+    # naip_obj.generate_vegetation_mask((0, 0), ())
 
     # create_cache()
     # clean_cache()

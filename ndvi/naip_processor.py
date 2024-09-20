@@ -134,12 +134,18 @@ class NAIPImagery:
 
     @staticmethod
     def set_mask_color(classified_ndvi, colors):
-        res = cv2.cvtColor(classified_ndvi, cv2.COLOR_GRAY2BGR)
-        # print(f"res shape: {res.shape}")
-        res[res[:, :, 0] != 0, 0] = colors[0]
-        res[res[:, :, 1] != 0, 1] = colors[1]
-        res[res[:, :, 2] != 0, 2] = colors[2]
+        res = np.tile(classified_ndvi, (3, 1, 1)).transpose(1, 2, 0)
+        res[:, :, 0] *= colors[0]
+        res[:, :, 1] *= colors[1]
+        res[:, :, 2] *= colors[2]
+
         return res
+
+    @staticmethod
+    def generate_vegetation_cover(mask, image):
+        mask_gray = mask.astype(np.uint8)
+        mask_bgr = NAIPImagery.set_mask_color(mask_gray, (0, 0, 255))
+        return cv2.addWeighted(image, 1, mask_bgr, 0.25, 0)
 
     @staticmethod
     def plot_bands(img, cmap, title):
@@ -166,22 +172,19 @@ class NAIPImagery:
         :param split_width: int, width of the blocks
         :return: None
         """
-        is_created = util.create_directory(des_path)
-        is_empty = False
-        if not is_created:
-            is_empty = util.remove_all_files(des_path)
+        util.create_directory(des_path)
+        util.remove_all_files(des_path)
 
-        if is_empty:
-            input_image = self.get_bgr_naip()
-            h, w = input_image.shape[:2]
-            splits = [input_image[y:y + split_height, x:x + split_width]
-                      for y in range(0, h, split_height)
-                      for x in range(0, w, split_width)]
-            n_digits = len(str(len(splits)))
-            for i, split in enumerate(splits):
-                if split is not None:
-                    filename = f"naip_split_rowSize{math.ceil(w / split_width)}_{str(i).zfill(n_digits)}.png"
-                    cv2.imwrite(os.path.join(des_path, filename), split)
+        input_image = self.get_bgr_naip()
+        h, w = input_image.shape[:2]
+        splits = [input_image[y:y + split_height, x:x + split_width]
+                  for y in range(0, h, split_height)
+                  for x in range(0, w, split_width)]
+        n_digits = len(str(len(splits)))
+        for i, split in enumerate(splits):
+            if split is not None:
+                filename = f"naip_split_rowSize{math.ceil(w / split_width)}_{str(i).zfill(n_digits)}.png"
+                cv2.imwrite(os.path.join(des_path, filename), split)
 
     def generate_vegetation_mask(self,
                                  top_left: tuple[int, int],
