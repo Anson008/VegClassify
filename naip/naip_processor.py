@@ -145,7 +145,7 @@ class NAIPImagery:
     def generate_vegetation_cover(mask, image):
         mask_gray = mask.astype(np.uint8)
         mask_bgr = NAIPImagery.set_mask_color(mask_gray, (0, 0, 255))
-        return cv2.addWeighted(image, 1, mask_bgr, 0.25, 0)
+        return cv2.addWeighted(image, 1, mask_bgr, 0.5, 0)
 
     @staticmethod
     def plot_bands(img, cmap, title):
