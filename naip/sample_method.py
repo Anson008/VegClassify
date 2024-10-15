@@ -8,10 +8,10 @@ class SampleMethod(ABC):
         pass
 
     @staticmethod
-    def _make_diagonal_coordinates(top_left_x: np.ndarray,
-                                   top_left_y: np.ndarray,
-                                   bottom_right_x: np.ndarray,
-                                   bottom_right_y: np.ndarray) -> np.ndarray:
+    def _make_diagonal_corners_coordinates(top_left_x: np.ndarray,
+                                           top_left_y: np.ndarray,
+                                           bottom_right_x: np.ndarray,
+                                           bottom_right_y: np.ndarray) -> np.ndarray:
         """
         Assemble the coordinates of the top-left and bottom-right corners.
         :param top_left_x: numpy array, x coordinates of the top left corner
@@ -50,7 +50,7 @@ class RandomSampleBySize(RandomSampleMethod):
         :param naip_size: tuple of int, the shape of NAIP (height, width).
         :param sample_shape: tuple of int, the block size (height, width) to split the NAIP into a grid.
         :return: np.ndarray of shape (n_samples, 4).
-        [top_left_x, top_left_y, bottom_right_x, bottom_right_y]. The block includes the bottom_right coordinates.
+        [top_left_x, top_left_y, bottom_right_x, bottom_right_y]. The bottom coordinates are .
         """
         naip_h = naip_size[0]
         naip_w = naip_size[1]
@@ -59,12 +59,12 @@ class RandomSampleBySize(RandomSampleMethod):
         sample_w = sample_shape[1]
 
         rng = np.random.default_rng(self._seed)
-        top_left_x = rng.integers(0, naip_w - sample_w, dtype=np.int32)
-        top_left_y = rng.integers(0, naip_h - sample_h, dtype=np.int32)
-        bottom_right_x = top_left_x + sample_w
-        bottom_right_y = top_left_y + sample_h
+        top_left_x = rng.integers(0, naip_w - sample_w + 1, 1, dtype=np.int32)
+        top_left_y = rng.integers(0, naip_h - sample_h + 1, 1, dtype=np.int32)
+        bottom_right_x = top_left_x + sample_w - 1
+        bottom_right_y = top_left_y + sample_h - 1
 
-        return self._make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
+        return self._make_diagonal_corners_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
 
 
 class RandomSampleByNumberPerDimension(RandomSampleMethod):
@@ -74,6 +74,14 @@ class RandomSampleByNumberPerDimension(RandomSampleMethod):
         self._n_samples_y = n_samples_y
 
     def sample(self, naip_size: tuple[int, int], sample_shape: tuple[int, int]):
+        """
+        Generate n_sample_x * n_sample_y random samples from the NAIP imagery. Coordinates along each dimension are
+        drawn randomly, and the 2D coordinates arrays are made over 2D grids given 1D coordinate arrays x and y.
+        :param naip_size: tuple of int, the shape of NAIP (height, width).
+        :param sample_shape: tuple of int, the block size (height, width) to split the NAIP into a grid.
+        :return: np.ndarray of shape (n_samples, 4).
+        [top_left_x, top_left_y, bottom_right_x, bottom_right_y]. The block includes the bottom_right coordinates.
+        """
         naip_h = naip_size[0]
         naip_w = naip_size[1]
 
@@ -86,10 +94,10 @@ class RandomSampleByNumberPerDimension(RandomSampleMethod):
         rng = np.random.default_rng(self._seed)
         top_left_x = rng.integers(0, naip_w - sample_w + 1, self._n_samples_x, dtype=np.int32)
         top_left_y = rng.integers(0, naip_h - sample_h + 1, self._n_samples_y, dtype=np.int32)
-        bottom_right_x = top_left_x + sample_w
-        bottom_right_y = top_left_y + sample_h
+        bottom_right_x = top_left_x + sample_w - 1
+        bottom_right_y = top_left_y + sample_h - 1
 
-        return self._make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
+        return self._make_diagonal_corners_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
 
 
 class GridSample(SampleMethod):
@@ -110,7 +118,7 @@ class GridSample(SampleMethod):
 
         top_left_x = np.arange(0, naip_w - block_w + 1, block_w, dtype=np.int32)
         top_left_y = np.arange(0, naip_h - block_h + 1, block_h, dtype=np.int32)
-        bottom_right_x = top_left_x + block_w
-        bottom_right_y = top_left_y + block_h
+        bottom_right_x = top_left_x + block_w - 1
+        bottom_right_y = top_left_y + block_h - 1
 
-        return self._make_diagonal_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)
+        return self._make_diagonal_corners_coordinates(top_left_x, top_left_y, bottom_right_x, bottom_right_y)

@@ -3,19 +3,15 @@ import os
 import cv2
 import numpy
 import numpy as np
-import utility
-import matplotlib.pyplot as plt
-from morphology.filter_factory import FilterFactory
-from morphology.connected_components import CV2ConnectedComponentsGenerator, ConnectedComponents
-from ndvi.naip_processor import NAIPImagery
+from naip.naip_processor import NAIPImagery
 from web_scraper.imagery_wayback_driver import ImageryWaybackDriver
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from Inferencer.deep_recognizer import DeepGreenSpaceRecognizer
-from utility.naip_sampler import NaipSampler
+from Inference.deep_recognizer import DeepGreenSpaceRecognizer
+from naip.naip_sampler import NaipSampler
 from utility.image_block import ImageBlock
 from utility import util
-from utility.confusion_matrix import ConfusionMatrix
+from naip.sample_method import GridSample
 
 
 # NAIP_RANDOM_SAMPLES_DIR = "./cache/naip_random_samples/"
@@ -147,7 +143,7 @@ def generate_naip_vegetation_masks(naip_img_path: str,
         # out_path = os.path.join(util.NAIP_MASKS_BINARY_DIR, out_filename)
         # np.save(out_path, mask_binary)
 
-        naip_image = naip_bgr_img[ty:by, tx:bx, :]
+        naip_image = naip_bgr_img[ty:by + 1, tx:bx + 1, :]
         vegetation_cover = naip_processor.generate_vegetation_cover(mask, naip_image)
         out_filename = f"naip_vegetation_cover_{str(i + 1).zfill(n_digits)}.png"
         out_path = os.path.join(naip_output_land_cover_path, out_filename)
@@ -157,6 +153,7 @@ def generate_naip_vegetation_masks(naip_img_path: str,
         out_filename = f"naip_mask_{str(i + 1).zfill(n_digits)}.png"
         out_path = os.path.join(naip_output_mask_path, out_filename)
         cv2.imwrite(out_path, mask)
+
 
 def generate_ground_truth(input_dir, config_path, checkpoint_path):
     try:
@@ -190,8 +187,8 @@ def generate_grid_naip_sample(naip_path: str, output_path: str, sample_xy_filena
     naip = NAIPImagery(naip_img)
     naip_bgr = naip.get_bgr_naip()
     naip_h, naip_w = naip_bgr.shape[:2]
-    naip_sampler = NaipSampler(naip_h, naip_w)
-    naip_sample_xy = naip_sampler.get_grid_samples()
+    naip_sampler = NaipSampler(GridSample())
+    naip_sample_xy = naip_sampler.get_sample_coordinates((naip_h, naip_w), (1024, 512))
 
     output_path = os.path.join(output_path, sample_xy_filename)
     np.save(output_path, naip_sample_xy)
@@ -225,7 +222,7 @@ def generate_ground_truth_from_rgb_naip(naip_sample_xy: numpy.ndarray,
         # center_abs_x, center_abs_y = image_block.get_absolute_center()
         # print(f"Center {i + 1} (x, y): {center_abs_x}, {center_abs_y}")
         tx, ty, bx, by = image_block.get_all_coordinates()
-        naip_sample = naip[:, ty:by, tx:bx]
+        naip_sample = naip[:, ty:by + 1, tx:bx + 1]
         naip_sample_bgr_img = naip_sample.get_bgr_naip()
 
         # Get inference from the DeepGreen model
@@ -256,15 +253,15 @@ def find_optimal_ndvi_by_naip(metrics_name):
     naip_path = "./image/m_4111118_nw_12_060_20210813.tif"
     sample_coordinate_file_path = "./cache/naip_sample_xy.npy"
 
-    # generate_grid_naip_sample(naip_path, "./cache/", "naip_sample_xy.npy")
-    #
-    # naip_sample_coordinates = util.load_npy_file(sample_coordinate_file_path)
-    # generate_ground_truth_from_rgb_naip(naip_sample_coordinates,
-    #                                     naip_path,
-    #                                     config_path,
-    #                                     checkpoint_path,
-    #                                     "./cache/ground_truth_mask1/",
-    #                                     "./cache/ground_truth_image1/")
+    generate_grid_naip_sample(naip_path, "./cache/", "naip_sample_xy.npy")
+
+    naip_sample_coordinates = util.load_npy_file(sample_coordinate_file_path)
+    generate_ground_truth_from_rgb_naip(naip_sample_coordinates,
+                                        naip_path,
+                                        config_path,
+                                        checkpoint_path,
+                                        "./cache/ground_truth_mask1/",
+                                        "./cache/ground_truth_image1/")
 
     thresholds = np.arange(0, 0.4, 0.02)
     max_metric_value = 0

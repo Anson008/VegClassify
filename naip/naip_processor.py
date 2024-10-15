@@ -202,7 +202,7 @@ class NAIPImagery:
         """
         tx, ty = top_left
         bx, by = bottom_right
-        img_block = self._naip_img[:, ty:by, tx:bx]
+        img_block = self._naip_img[:, ty:by + 1, tx:bx + 1]
         ndvi = self.calculate_ndvi(img_block)
         return self.classify(ndvi, threshold, invert)
 
