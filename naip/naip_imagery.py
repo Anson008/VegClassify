@@ -1,8 +1,6 @@
 import cv2
 import earthpy.spatial as es
-import earthpy.plot as ep
 import numpy as np
-import matplotlib.pyplot as plt
 import os
 from utility import util
 import math
@@ -16,6 +14,7 @@ class NAIPImagery:
         :param naip_img: xarray.DataArray, the input NAIP image
         """
         self._naip_img = naip_img
+        self._ndvi = None
 
     def __getitem__(self, index):
         return NAIPImagery(self._naip_img[index])
@@ -34,7 +33,15 @@ class NAIPImagery:
         """
         self._naip_img = new_naip_img
 
+    @property
+    def ndvi(self) -> np.ndarray | None:
+        return self._ndvi
+
     def get_center(self) -> tuple[int, int]:
+        """
+        Get the center coordinates of the NAIP imagery.
+        :return: tuple of int, (center_y, center_x).
+        """
         height, width = self.naip_img.shape[1:]
         return (height - 1) // 2, (width - 1) // 2
 
@@ -74,7 +81,7 @@ class NAIPImagery:
 
     def get_resolution(self) -> tuple[int, int]:
         """
-        Get the resolution of the NAIP image.
+        Get the resolution of the NAIP image in meters/pixel.
         :return: tuple of int, resolution of the NAIP image along x- and y-axis.
         """
         return self._naip_img.rio.resolution()
@@ -94,75 +101,61 @@ class NAIPImagery:
         # Convert RGB to BGR, as BGR is the default color model of OpenCV
         return cv2.cvtColor(naip_rgb, cv2.COLOR_RGB2BGR)
 
-    @staticmethod
-    def show_image(window_name: str, img: np.ndarray) -> None:
+    def show_image(self, window_name: str) -> None:
         """
+        Display the input image in a new window.
         :param window_name: str, title of the window displaying the image
-        :param img: numpy array, image to display
         :return: None
         """
-        cv2.imshow(window_name, img)
+        cv2.imshow(window_name, self.get_bgr_naip())
         cv2.waitKey(0)
         cv2.destroyWindow(window_name)
 
-    @staticmethod
-    def calculate_ndvi(naip_img: xr.DataArray) -> np.ndarray:
+    def calculate_ndvi(self) -> np.ndarray:
         """
         Calculate the normalized difference (NDVI) of the input NAIP image.
-        :param naip_img: xarray.DataArray, NAIP image to perform the calculation on
         :return: numpy array, NDVI results
         """
-        naip_data = naip_img.values.astype(np.float64)
+        naip_data = self._naip_img.values.astype(np.float64)
         return es.normalized_diff(naip_data[3], naip_data[0])
 
     @staticmethod
-    def classify(ndvi: np.ndarray, threshold: float, invert: bool = False):
+    def set_mask_color(mask_gray: np.ndarray, colors: tuple[int, int, int] = (0, 0, 255)):
         """
-        :param ndvi: numpy array, NDVI values for an image
-        :param threshold: float, the value to distinguish green space and non-green space
-        :param invert: bool, set to invert the classification result.
-                    Default is False, indicating 1 for green and 0 for non-green.
-        :return: numpy array, classified pixel values of the image
+        Apply a color specified by colors (B,G,R) to the NDVI mask (binary-classified)
+        and return the colored mask.
+        :param mask_gray: np.ndarray of data type "np.uint8", the binary-classified NDVI mask.
+        :param colors: tuple of int, specifing the (B, G, R) values of the color to apply.
+        :return: np.ndarray, colored NDVI mask of shape (height, width, color).
         """
-        classified_ndvi = np.zeros_like(ndvi, dtype=np.uint8)
-        classified_ndvi[ndvi >= threshold] = 1
-        classified_ndvi[ndvi < threshold] = 0
-        if invert:
-            classified_ndvi = np.invert(classified_ndvi.astype(np.bool_)).astype(np.uint8)
-        # classified_ndvi[classified_ndvi != 0] = 255
-        return classified_ndvi
-
-    @staticmethod
-    def set_mask_color(classified_ndvi, colors):
-        res = np.tile(classified_ndvi, (3, 1, 1)).transpose(1, 2, 0)
+        res = np.tile(mask_gray, (3, 1, 1)).transpose(1, 2, 0)
         res[:, :, 0] *= colors[0]
         res[:, :, 1] *= colors[1]
         res[:, :, 2] *= colors[2]
-
         return res
 
-    @staticmethod
-    def generate_vegetation_cover(mask, image):
-        mask_gray = mask.astype(np.uint8)
+    def generate_vegetation_cover_map(self, ndvi_threshold: float, invert: bool = False) -> np.ndarray:
+        mask_gray = self.generate_vegetation_mask(ndvi_threshold, invert)
         mask_bgr = NAIPImagery.set_mask_color(mask_gray, (0, 0, 255))
-        return cv2.addWeighted(image, 1, mask_bgr, 0.5, 0)
+        return cv2.addWeighted(self.get_bgr_naip(), 1, mask_bgr, 0.5, 0)
 
-    @staticmethod
-    def plot_bands(img, cmap, title):
+    def generate_vegetation_mask(self,
+                                 ndvi_threshold: float,
+                                 invert: bool = False) -> np.ndarray:
         """
-        :param img: numpy array, image to display
-        :param cmap: str, name of the color map
-        :param title: str, title of the figure
-        :return: None
+        Generate vegetation mask for the NAIP image.
+        :param ndvi_threshold: float, NDVI threshold to classify pixels.
+        :param invert: bool, set to invert the classification result.
+                    Default is False, indicating 1 for green and 0 for non-green.
+        :return: numpy array, vegetation mask representing if the pixels are green or not.
         """
-
-        ep.plot_bands(img,
-                      cmap=cmap,
-                      scale=False,
-                      vmin=-1,
-                      vmax=1,
-                      title=title)
-        plt.show()
+        ndvi = self.calculate_ndvi()
+        vegetation_mask = np.zeros_like(ndvi, dtype=np.uint8)
+        vegetation_mask[ndvi >= ndvi_threshold] = 1
+        vegetation_mask[ndvi < ndvi_threshold] = 0
+        if invert:
+            vegetation_mask = np.invert(vegetation_mask.astype(np.bool_)).astype(np.uint8)
+        return vegetation_mask
 
     def split_image(self, des_path: str, split_height: int, split_width: int) -> None:
         """
@@ -185,26 +178,6 @@ class NAIPImagery:
             if split is not None:
                 filename = f"naip_split_rowSize{math.ceil(w / split_width)}_{str(i).zfill(n_digits)}.png"
                 cv2.imwrite(os.path.join(des_path, filename), split)
-
-    def generate_vegetation_mask(self,
-                                 top_left: tuple[int, int],
-                                 bottom_right: tuple[int, int],
-                                 threshold: float,
-                                 invert: bool = False) -> np.ndarray:
-        """
-        Generate vegetation mask specified by top_left and bottom_right on the NAIP image.
-        :param top_left: tuple of int, top left pixel coordinates of the target block
-        :param bottom_right: tuple of int, bottom right pixel coordinates of the target block
-        :param threshold: float, NDVI threshold to classify pixels
-        :param invert: bool, set to invert the classification result.
-                    Default is False, indicating 1 for green and 0 for non-green.
-        :return: numpy array, vegetation mask representing if the pixels are green or not.
-        """
-        tx, ty = top_left
-        bx, by = bottom_right
-        img_block = self._naip_img[:, ty:by + 1, tx:bx + 1]
-        ndvi = self.calculate_ndvi(img_block)
-        return self.classify(ndvi, threshold, invert)
 
     def get_template_match_info(self,
                                 naip_samples_path: str,
