@@ -1,4 +1,4 @@
-from naip.naip_processor import NAIPImagery
+from naip.naip_imagery import NAIPImagery
 from naip.naip_sampler import NaipSampler
 from naip.sample_method import GridSample
 from utility import util
@@ -9,6 +9,10 @@ from utility.image_block import ImageBlock
 
 class TrainDataGenerator:
     def __init__(self, naip_dir: str | None = None):
+        """
+        Create an instance of TrainDataGenerator.
+        :param naip_dir: str, directory of NAIP imagery.
+        """
         self._naip_dir = naip_dir
 
     @property
@@ -19,7 +23,12 @@ class TrainDataGenerator:
     def naip_dir(self, value: str | None):
         self._naip_dir = value
 
-    def generate_train_data(self, output_dir: str):
+    def generate_train_data(self, output_dir: str) -> None:
+        """
+        Generate training data from NAIP imagery and save the results to output_dir.
+        :param output_dir: str, output directory of the training data.
+        :return: None.
+        """
         if not os.path.exists(self._naip_dir):
             print("NAIP directory does not exist.")
             return
@@ -38,7 +47,7 @@ class TrainDataGenerator:
                     naip_h = naip_obj.naip_img.shape[1]
                     naip_w = naip_obj.naip_img.shape[2]
                     sample_coordinates = naip_sampler.get_sample_coordinates(naip_size=(naip_h, naip_w),
-                                                                  sample_shape=(1024, 512))
+                                                                             sample_shape=(1024, 512))
                     n_samples = sample_coordinates.shape[0]
                     n_digits = len(str(n_samples))
                     filename = entry.name.split(".")[0]
