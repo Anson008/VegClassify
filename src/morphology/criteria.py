@@ -1,7 +1,6 @@
 import cv2
 from abc import ABC, abstractmethod
-from morphology.connected_components import ConnectedComponents, CV2ConnectedComponentsGenerator
-from ndvi.naip_processor import NAIPImagery
+from src.morphology.connected_components import ConnectedComponents
 import numpy as np
 
 

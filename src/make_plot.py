@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 
 if __name__ == "__main__":
-    ndvi_data_path = "./cache/ndvi_thresholds_on_accuracy.npy"
+    ndvi_data_path = "../cache/ndvi_thresholds_on_accuracy.npy"
     ndvi_data = np.load(ndvi_data_path)
     print(ndvi_data.shape)
 
@@ -17,10 +17,10 @@ if __name__ == "__main__":
     axe.yaxis.set_minor_locator(AutoMinorLocator())
     axe.tick_params(axis="both", which="both", direction="in")
 
-    axe.set_xlabel("NDVI Threshold")
-    axe.set_ylabel("Accuracy")
+    axe.set_xlabel("NDVI Threshold", fontsize=14)
+    axe.set_ylabel("Accuracy", fontsize=14)
 
     # output_path = "./results/NDVI_Thresholds/ndvi_kappa.png"
-    output_path = "./results/NDVI_Threshold/ndvi_accuracy.png"
+    output_path = "../results/NDVI_Threshold/ndvi_accuracy.png"
     plt.savefig(fname=output_path, dpi=300, format="png")
     plt.show()

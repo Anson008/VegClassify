@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 import os
-from morphology.connected_components import ConnectedComponentsProcessor as ccp
+from src.morphology.connected_components import ConnectedComponentsProcessor as ccp
 from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import GridSearchCV
 import pickle
@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
     # make_em_train_data("./image/em_train_img_01.png", "./results")
 
-    file_path = "../models/gaussian_mixture/gm_init15_randFromData_class6_tol1e-4.pickle"
+    file_path = "../../models/gaussian_mixture/gm_init15_randFromData_class6_tol1e-4.pickle"
     # train_img = cv2.imread("./image/em_train_img_colors.png")
     # em_mode = "grid-search"
     # detector.detect_color_em(train_img, n_class=6, save_to_file=file_path)

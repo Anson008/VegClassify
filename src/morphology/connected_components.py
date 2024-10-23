@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import math
 import json
-from ndvi.naip_processor import NAIPImagery
+from src.naip.naip_imagery import NAIPImagery
 
 
 class ConnectedComponents:
@@ -219,7 +219,7 @@ class ConnectedComponentsProcessor:
 
 
 if __name__ == "__main__":
-    img_path = "../image/m_4111118_nw_12_060_20210813_Clip.tif"
+    img_path = "../../image/m_4111118_nw_12_060_20210813_Clip.tif"
     naip = NAIPImagery(img_path)
     naip_bgr = naip.get_bgr_naip()
     naip_reprojected = naip.reproject("EPSG:4326")

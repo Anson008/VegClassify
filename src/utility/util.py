@@ -2,11 +2,10 @@ import math
 import ctypes
 import os
 import cv2
-import json
 import numpy as np
 import rioxarray as rxr
 # import constants as const
-from utility.confusion_matrix import ConfusionMatrix
+from src.utility.confusion_matrix import ConfusionMatrix
 
 # Constants
 BETA = 1.1
@@ -123,7 +122,7 @@ def create_directory(directory):
             print(err)
             return False
     else:
-        print("Directory already exists.")
+        print(f"Directory already exists: {directory}")
         return False
 
 
@@ -136,7 +135,6 @@ def remove_all_files(directory):
             for entry in entries:
                 if entry.is_file():
                     os.unlink(entry.path)
-        print(f"All files are deleted in {directory}")
         return True
     except OSError as err:
         print(err)

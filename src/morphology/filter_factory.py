@@ -1,4 +1,4 @@
-from morphology import criteria
+from src.morphology import criteria
 
 
 class FilterFactory:

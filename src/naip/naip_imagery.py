@@ -2,7 +2,7 @@ import cv2
 import earthpy.spatial as es
 import numpy as np
 import os
-from utility import util
+from src.utility import util
 import math
 import xarray as xr
 
@@ -244,7 +244,7 @@ class NAIPImagery:
 
 
 if __name__ == "__main__":
-    img_path = "../image/m_4111118_nw_12_060_20210813.tif"
+    img_path = "../../image/m_4111118_nw_12_060_20210813.tif"
 
     naip_img = util.read_naip_image(img_path)
     naip = NAIPImagery(naip_img)
