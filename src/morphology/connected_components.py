@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import math
 import json
-from src.naip.naip_imagery import NAIPImagery
+from naip.naip_imagery import NAIPImagery
 
 
 class ConnectedComponents:

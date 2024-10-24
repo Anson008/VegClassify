@@ -7,8 +7,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import pyscreenshot as imagegrab
-from src.utility import util
-from src.utility.point import Point
+from utility import util
+from utility.point import Point
 import numpy as np
 
 

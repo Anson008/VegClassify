@@ -1,6 +1,6 @@
 import cv2
 from abc import ABC, abstractmethod
-from src.morphology.connected_components import ConnectedComponents
+from morphology.connected_components import ConnectedComponents
 import numpy as np
 
 

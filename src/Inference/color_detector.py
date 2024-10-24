@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 import os
-from src.morphology.connected_components import ConnectedComponentsProcessor as ccp
+from morphology.connected_components import ConnectedComponentsProcessor as ccp
 from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import GridSearchCV
 import pickle

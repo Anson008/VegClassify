@@ -1,10 +1,10 @@
-from src.naip.naip_imagery import NAIPImagery
-from src.naip.naip_sampler import NaipSampler
-from src.naip.sample_method import GridSample
-from src.utility import util
+from naip.naip_imagery import NAIPImagery
+from naip.naip_sampler import NaipSampler
+from naip.sample_method import GridSample
+from utility import util
 import os
 import cv2
-from src.utility.image_block import ImageBlock
+from utility.image_block import ImageBlock
 
 
 class TrainDataGenerator:

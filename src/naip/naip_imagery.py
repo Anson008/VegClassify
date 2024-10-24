@@ -2,7 +2,7 @@ import cv2
 import earthpy.spatial as es
 import numpy as np
 import os
-from src.utility import util
+from utility import util
 import math
 import xarray as xr
 

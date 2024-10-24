@@ -3,13 +3,16 @@ import os
 import cv2
 import numpy
 import numpy as np
-from src.naip.naip_imagery import NAIPImagery
-from src.Inference.deep_recognizer import DeepGreenSpaceRecognizer
-from src.naip.naip_sampler import NaipSampler
-from src.utility.image_block import ImageBlock
-from src.utility import util
-from src.naip.sample_method import GridSample
+from naip.naip_imagery import NAIPImagery
+from Inference.deep_recognizer import DeepGreenSpaceRecognizer
+from naip.naip_sampler import NaipSampler
+from utility.image_block import ImageBlock
+from utility import util
+from naip.sample_method import GridSample
 import progressbar
+from smartndvi import __app_name__
+from smartndvi import cli
+import click
 
 
 # NAIP_RANDOM_SAMPLES_DIR = "./cache/naip_random_samples/"
@@ -17,6 +20,15 @@ import progressbar
 # WAYBACK_SCREENSHOTS_DIR = "./cache/wayback_screenshots/"
 # GROUND_TRUTH_MASKS_DIR = "./cache/ground_truth_masks/"
 # GROUND_TRUTH_IMAGES_DIR = "./cache/ground_truth_images/"
+
+@click.command("hello")
+@click.version_option("0.1.0", prog_name="hello")
+def hello():
+    click.echo("Hello World")
+
+
+def main():
+    cli.app(prog_name=__app_name__)
 
 
 def create_cache():
@@ -129,27 +141,27 @@ def generate_ground_truth_from_rgb_naip(naip_sample_xy: numpy.ndarray,
 
 def find_optimal_ndvi_by_naip(metrics_name):
     # Set model configuration path and checkpoint path
-    config_path = "configs/fcn_aux-hr48_256x512_80k_singlegreen.py"
-    checkpoint_path = "../models/iter_1000.pth"
-    naip_path = "../image/m_4111118_nw_12_060_20210813.tif"
-    sample_coordinate_file_path = "../cache/naip_sample_xy.npy"
+    config_path = "../configs/fcn_aux-hr48_256x512_80k_singlegreen.py"
+    checkpoint_path = "../../models/iter_1000.pth"
+    naip_path = "../../image/m_4111118_nw_12_060_20210813.tif"
+    sample_coordinate_file_path = "../../cache/naip_sample_xy.npy"
 
-    generate_grid_naip_sample(naip_path, "../cache/", "naip_sample_xy.npy")
+    generate_grid_naip_sample(naip_path, "../../cache/", "naip_sample_xy.npy")
 
     naip_sample_coordinates = util.load_npy_file(sample_coordinate_file_path)
     generate_ground_truth_from_rgb_naip(naip_sample_coordinates,
                                         naip_path,
                                         config_path,
                                         checkpoint_path,
-                                        "../cache/ground_truth_mask1/",
+                                        "../../cache/ground_truth_mask1/",
                                         "./cache/ground_truth_image1/")
 
     thresholds = tuple(np.arange(0, 0.4, 0.02))
     max_metric_value = 0
     cm_outfile_name = f"confusion_matrix_{metrics_name}_on_naip.json"
 
-    naip_sample_mask_dir = "../cache/naip_sample_mask1/"
-    ground_truth_mask_dir = "../cache/ground_truth_mask1/"
+    naip_sample_mask_dir = "../../cache/naip_sample_mask1/"
+    ground_truth_mask_dir = "../../cache/ground_truth_mask1/"
     util.create_directory(naip_sample_mask_dir)
 
     n_thresholds = len(thresholds)
@@ -191,6 +203,7 @@ if __name__ == '__main__':
     #                                     "./cache/ground_truth_mask1/",
     #                                     "./cache/ground_truth_image1/")
 
-    find_optimal_ndvi_by_naip("kappa")
+    # find_optimal_ndvi_by_naip("kappa")
+    main()
 
 

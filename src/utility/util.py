@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import rioxarray as rxr
 # import constants as const
-from src.utility.confusion_matrix import ConfusionMatrix
+from utility.confusion_matrix import ConfusionMatrix
 
 # Constants
 BETA = 1.1

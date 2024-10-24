@@ -1,4 +1,4 @@
-from src.naip.sample_method import SampleMethod
+from naip.sample_method import SampleMethod
 
 
 class NaipSampler:
