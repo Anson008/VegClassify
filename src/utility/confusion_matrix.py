@@ -4,7 +4,6 @@ class ConfusionMatrix:
         self._fp = 0
         self._tn = 0
         self._fn = 0
-        self.confusion_matrix = {"tp": 0, "fp": 0, "tn": 0, "fn": 0, "kappa": 0}
 
     @property
     def tp(self):
@@ -39,11 +38,27 @@ class ConfusionMatrix:
         self._fn = value
 
     def get_kappa(self):
-        numerator = self._tp * self._tn - self._fp * self._fn
-        denominator = ((self._tp + self._fp) * (self._fp + self._tn) +
+        try:
+            numerator = self._tp * self._tn - self._fp * self._fn
+            denominator = ((self._tp + self._fp) * (self._fp + self._tn) +
                        (self._tp + self._fn) * (self._fn + self._tn))
-        return 2.0 * numerator / denominator
+            return 2.0 * numerator / denominator
+        except ZeroDivisionError as err:
+            print(f"{err}: Failed to calculate kappa")
+            return -1
 
     def get_accuracy(self):
-        return 1.0 * (self._tp + self._tn) / (self._tp + self._fp + self._tn + self._fn)
+        try:
+            return 1.0 * (self._tp + self._tn) / (self._tp + self._fp + self._tn + self._fn)
+        except ZeroDivisionError as err:
+            print(f"{err}: Failed to calculate accuracy")
+            return -1
+
+    def get_confusion_matrix(self):
+        return {"tp": self._tp,
+                "fp": self._fp,
+                "tn": self._tn,
+                "fn": self._fn,
+                "accuracy": self.get_accuracy(),
+                "kappa": self.get_kappa()}
 

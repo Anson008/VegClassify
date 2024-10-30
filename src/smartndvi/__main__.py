@@ -1,5 +1,6 @@
 import json
 import os
+import copy
 import cv2
 import numpy
 import numpy as np
@@ -10,8 +11,8 @@ from utility.image_block import ImageBlock
 from utility import util
 from naip.sample_method import GridSample
 import progressbar
-from smartndvi import __app_name__
-from smartndvi import cli
+# from smartndvi import __app_name__
+# from smartndvi import cli
 import click
 
 
@@ -28,7 +29,8 @@ def hello():
 
 
 def main():
-    cli.app(prog_name=__app_name__)
+    # cli.app(prog_name=__app_name__)
+    pass
 
 
 def create_cache():
@@ -154,10 +156,11 @@ def find_optimal_ndvi_by_naip(metrics_name):
                                         config_path,
                                         checkpoint_path,
                                         "../../cache/ground_truth_mask1/",
-                                        "./cache/ground_truth_image1/")
+                                        "../../cache/ground_truth_image1/")
 
     thresholds = tuple(np.arange(0, 0.4, 0.02))
     max_metric_value = 0
+    cm_optimal = {}
     cm_outfile_name = f"confusion_matrix_{metrics_name}_on_naip.json"
 
     naip_sample_mask_dir = "../../cache/naip_sample_mask1/"
@@ -178,11 +181,12 @@ def find_optimal_ndvi_by_naip(metrics_name):
             cm = util.get_confusion_matrix_on_naip(naip_sample_mask_dir, ground_truth_mask_dir)
 
             if cm[metrics_name] > max_metric_value:
-                max_metric_value = cm[metrics_name]
                 cm[f"optimal_threshold_on_{metrics_name}"] = thresholds[i]
-                with open(f"./cache/{cm_outfile_name}", "w+") as outfile:
-                    outfile.write(json.dumps(cm, indent=4))
+                max_metric_value = cm[metrics_name]
+                cm_optimal = copy.deepcopy(cm)
             bar.update(i)
+    with open(f"../../cache/{cm_outfile_name}", "w+") as outfile:
+        outfile.write(json.dumps(cm_optimal, indent=4))
 
 
 # Press the green button in the gutter to run the script.
@@ -203,7 +207,7 @@ if __name__ == '__main__':
     #                                     "./cache/ground_truth_mask1/",
     #                                     "./cache/ground_truth_image1/")
 
-    # find_optimal_ndvi_by_naip("kappa")
-    main()
+    find_optimal_ndvi_by_naip("kappa")
+    # main()
 
 

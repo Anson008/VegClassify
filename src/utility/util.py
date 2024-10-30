@@ -224,75 +224,63 @@ def get_confusion_matrix_on_naip(naip_mask_path, ground_truth_mask_path):
 
         # Accumulate TP and TN
         gt_and_naip = np.logical_and(gt_mask_img, naip_mask_img)
-        n_tp = np.sum(gt_and_naip).astype(np.int64)
+        n_tp = int(np.sum(gt_and_naip))
         cm_obj.tp += n_tp
-        cm_obj.tn += gt_and_naip.size - n_tp
+        cm_obj.tn += int(gt_and_naip.size) - n_tp
 
         # Accumulate FP and FN
-        cm_obj.fp += np.sum(np.logical_and(np.logical_not(gt_mask_img), naip_mask_img)).astype(np.int64)
-        cm_obj.fn += np.sum(np.logical_and(gt_mask_img, np.logical_not(naip_mask_img))).astype(np.int64)
+        cm_obj.fp += int(np.sum(np.logical_and(np.logical_not(gt_mask_img), naip_mask_img)))
+        cm_obj.fn += int(np.sum(np.logical_and(gt_mask_img, np.logical_not(naip_mask_img))))
 
-    # kappa = 2.0 * (tp * tn - fp * fn) / ((tp + fp) * (fp + tn) + (tp + fn) * (fn + tn))
-    # accuracy = 1.0 * (tp + tn) / (tp + fp + tn + fn)
-    cm_obj.confusion_matrix["kappa"] = cm_obj.get_kappa()
-    cm_obj.confusion_matrix["accuracy"] = cm_obj.get_accuracy()
-
-    # cm["tp"] = int(tp)
-    # cm["fp"] = int(fp)
-    # cm["tn"] = int(tn)
-    # cm["fn"] = int(fn)
-    # cm["kappa"] = float(kappa)
-    # cm["accuracy"] = float(accuracy)
-
-    return cm_obj.confusion_matrix
+    return cm_obj.get_confusion_matrix()
 
 
-def get_confusion_matrix(naip_mask_path, ground_truth_mask_path, tm_info_path):
-    naip_file_obj = os.scandir(naip_mask_path)
-    gt_file_obj = os.scandir(ground_truth_mask_path)
-    tm_info = np.load(tm_info_path).tolist()
-
-    cm = {"tp": 0, "fp": 0, "tn": 0, "fn": 0, "kappa": 0}
-    tp, fp, tn, fn, kappa = 0, 0, 0, 0, 0
-
-    for naip_mask, gt_mask, tm_i in zip(naip_file_obj, gt_file_obj, tm_info):
-        scale, ox, oy, ndvi_h, ndvi_w = tm_i
-        ox = int(ox)
-        oy = int(oy)
-        ndvi_h = int(ndvi_h)
-        ndvi_w = int(ndvi_w)
-
-        naip_mask_img = cv2.imread(os.path.join(naip_mask_path, naip_mask.name))
-        gt_mask_img = cv2.imread(os.path.join(ground_truth_mask_path, gt_mask.name))
-
-        gt_matched_mask = gt_mask_img[oy:oy + ndvi_h, ox:ox + ndvi_w]
-        naip_matched_mask = cv2.resize(naip_mask_img,
-                                       dsize=(0, 0),
-                                       fx=scale,
-                                       fy=scale,
-                                       interpolation=cv2.INTER_CUBIC)
-
-        # Accumulate TP and TN
-        gt_and_naip = np.logical_and(gt_matched_mask, naip_matched_mask)
-        n_tp = np.sum(gt_and_naip).astype(np.int64)
-        tp += n_tp
-        tn += gt_and_naip.size - n_tp
-
-        # Accumulate FP and FN
-        fp += np.sum(np.logical_and(np.logical_not(gt_matched_mask), naip_matched_mask)).astype(np.int64)
-        fn += np.sum(np.logical_and(gt_matched_mask, np.logical_not(naip_matched_mask))).astype(np.int64)
-
-    kappa = 2.0 * (tp * tn - fp * fn) / ((tp + fp) * (fp + tn) + (tp + fn) * (fn + tn))
-    accuracy = 1.0 * (tp + tn) / (tp + fp + tn + fn)
-
-    cm["tp"] = int(tp)
-    cm["fp"] = int(fp)
-    cm["tn"] = int(tn)
-    cm["fn"] = int(fn)
-    cm["kappa"] = float(kappa)
-    cm["accuracy"] = float(accuracy)
-
-    return cm
+# def get_confusion_matrix(naip_mask_path, ground_truth_mask_path, tm_info_path):
+#     naip_file_obj = os.scandir(naip_mask_path)
+#     gt_file_obj = os.scandir(ground_truth_mask_path)
+#     tm_info = np.load(tm_info_path).tolist()
+#
+#     cm = {"tp": 0, "fp": 0, "tn": 0, "fn": 0, "kappa": 0}
+#     tp, fp, tn, fn, kappa = 0, 0, 0, 0, 0
+#
+#     for naip_mask, gt_mask, tm_i in zip(naip_file_obj, gt_file_obj, tm_info):
+#         scale, ox, oy, ndvi_h, ndvi_w = tm_i
+#         ox = int(ox)
+#         oy = int(oy)
+#         ndvi_h = int(ndvi_h)
+#         ndvi_w = int(ndvi_w)
+#
+#         naip_mask_img = cv2.imread(os.path.join(naip_mask_path, naip_mask.name))
+#         gt_mask_img = cv2.imread(os.path.join(ground_truth_mask_path, gt_mask.name))
+#
+#         gt_matched_mask = gt_mask_img[oy:oy + ndvi_h, ox:ox + ndvi_w]
+#         naip_matched_mask = cv2.resize(naip_mask_img,
+#                                        dsize=(0, 0),
+#                                        fx=scale,
+#                                        fy=scale,
+#                                        interpolation=cv2.INTER_CUBIC)
+#
+#         # Accumulate TP and TN
+#         gt_and_naip = np.logical_and(gt_matched_mask, naip_matched_mask)
+#         n_tp = np.sum(gt_and_naip).astype(np.int64)
+#         tp += n_tp
+#         tn += gt_and_naip.size - n_tp
+#
+#         # Accumulate FP and FN
+#         fp += np.sum(np.logical_and(np.logical_not(gt_matched_mask), naip_matched_mask)).astype(np.int64)
+#         fn += np.sum(np.logical_and(gt_matched_mask, np.logical_not(naip_matched_mask))).astype(np.int64)
+#
+#     kappa = 2.0 * (tp * tn - fp * fn) / ((tp + fp) * (fp + tn) + (tp + fn) * (fn + tn))
+#     accuracy = 1.0 * (tp + tn) / (tp + fp + tn + fn)
+#
+#     cm["tp"] = int(tp)
+#     cm["fp"] = int(fp)
+#     cm["tn"] = int(tn)
+#     cm["fn"] = int(fn)
+#     cm["kappa"] = float(kappa)
+#     cm["accuracy"] = float(accuracy)
+#
+#     return cm
 
 
 def load_npy_file(file_path):
