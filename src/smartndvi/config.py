@@ -1,6 +1,5 @@
 import typer
 from pathlib import Path
-from smartndvi import __app_name__
 from smartndvi import SUCCESS, DIR_ERROR, FILE_ERROR, DB_WRITE_ERROR, __app_name__
 from utility.toml import TOML
 import tomlkit
@@ -18,6 +17,10 @@ def init_app(db_path: str) -> int:
     config_status = _init_config_file()
     if config_status != SUCCESS:
         return config_status
+    database_status = _create_database(db_path)
+    if database_status != SUCCESS:
+        return database_status
+    return SUCCESS
 
 
 def _init_config_file() -> int:
