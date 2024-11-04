@@ -1,4 +1,5 @@
 import typer
+import os
 from pathlib import Path
 from smartndvi import SUCCESS, DIR_ERROR, FILE_ERROR, DB_WRITE_ERROR, __app_name__
 from utility.toml import TOML
@@ -8,18 +9,19 @@ CONFIG_DIR = Path(typer.get_app_dir(__app_name__))
 CONFIG_FILE_PATH = CONFIG_DIR / "config.toml"
 
 
-def init_app(db_path: str) -> int:
+def init_app(output_root_path: str) -> int:
     """
     Initialize the application.
-    :param db_path: str, specifying the path of the database.
+    :param output_root_path: str, specifying the root path of the output.
     :return: int, status code.
     """
     config_status = _init_config_file()
     if config_status != SUCCESS:
         return config_status
-    database_status = _create_database(db_path)
-    if database_status != SUCCESS:
-        return database_status
+
+    output_dir_status = _create_output_directory(output_root_path)
+    if output_dir_status != SUCCESS:
+        return output_dir_status
     return SUCCESS
 
 
@@ -30,19 +32,59 @@ def _init_config_file() -> int:
         return DIR_ERROR
 
     try:
+        CONFIG_FILE_PATH.unlink(missing_ok=True)
+    except OSError:
+        return FILE_ERROR
+
+    try:
         CONFIG_FILE_PATH.touch(exist_ok=True)
     except OSError:
         return FILE_ERROR
     return SUCCESS
 
 
-def _create_database(db_path: str) -> int:
+def _create_output_directory(out_path: str) -> int:
     toml = TOML(CONFIG_FILE_PATH)
     general = tomlkit.table()
-    general.add("database", db_path)
+    # out_path = Path(out_path)
+
+    # Add output root directory
+    general.add("ndvi_output_root", out_path)
+
+    # Add cache directory
+    cache = tomlkit.table()
+    cache.add("cache_root", os.path.join(out_path, "cache"))
+    cache.add("ground_truth_image", os.path.join(out_path, "cache\\ground_truth_image"))
+    cache.add("ground_truth_mask", os.path.join(out_path, "cache\\ground_truth_mask"))
+    cache.add("naip_sample_mask", os.path.join(out_path, "cache\\naip_sample_mask"))
+
+    # Add output directory
+    output = tomlkit.table()
+    output.add("landcover_maps", os.path.join(out_path, "landcover_maps"))
+    output.add("optimal_ndvi", os.path.join(out_path, "optimal_ndvi"))
+
+    general.add("Cache", cache)
+    general.add("Output", output)
     toml.toml_document.add("General", general)
+
     try:
         toml.save_config_file(CONFIG_FILE_PATH)
     except OSError:
         return DB_WRITE_ERROR
     return SUCCESS
+
+
+# def _create_database(db_path: str) -> int:
+#     toml = TOML(CONFIG_FILE_PATH)
+#     general = tomlkit.table()
+#     general.add("database", db_path)
+#     toml.toml_document.add("General", general)
+#     try:
+#         toml.save_config_file(CONFIG_FILE_PATH)
+#     except OSError:
+#         return DB_WRITE_ERROR
+#     return SUCCESS
+
+
+if __name__ == "__main__":
+    print(CONFIG_FILE_PATH)
