@@ -128,7 +128,7 @@ def create_directory(directory):
 
 def remove_all_files(directory):
     if len(os.listdir(directory)) == 0:
-        print("Directory is empty.")
+        print(f"Empty directory. No file need to remove in '{directory}'")
         return True
     try:
         with os.scandir(directory) as entries:

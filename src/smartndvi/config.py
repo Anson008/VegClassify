@@ -49,7 +49,7 @@ def _create_output_directory(out_path: str) -> int:
     # out_path = Path(out_path)
 
     # Add output root directory
-    general.add("ndvi_output_root", out_path)
+    general.add("ndvi_workspace_root", out_path)
 
     # Add cache directory
     cache = tomlkit.table()
@@ -60,11 +60,19 @@ def _create_output_directory(out_path: str) -> int:
 
     # Add output directory
     output = tomlkit.table()
-    output.add("landcover_maps", os.path.join(out_path, "landcover_maps"))
-    output.add("optimal_ndvi", os.path.join(out_path, "optimal_ndvi"))
+    output.add("output_root", os.path.join(out_path, "output"))
+    output.add("land_cover_maps", os.path.join(out_path, "output\\land_cover_maps"))
+    output.add("optimal_ndvi", os.path.join(out_path, "output\\optimal_ndvi"))
+
+    # Add model directory
+    model = tomlkit.table()
+    model.add("model_root", os.path.join(out_path, "model"))
+    model.add("config", os.path.join(out_path, "model\\config"))
+    model.add("checkpoint", os.path.join(out_path, "model\\checkpoint"))
 
     general.add("Cache", cache)
     general.add("Output", output)
+    general.add("Model", model)
     toml.toml_document.add("General", general)
 
     try:

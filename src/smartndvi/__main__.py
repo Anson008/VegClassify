@@ -27,10 +27,10 @@ import click
 # GROUND_TRUTH_MASKS_DIR = "./cache/ground_truth_masks/"
 # GROUND_TRUTH_IMAGES_DIR = "./cache/ground_truth_images/"
 
-@click.command("hello")
-@click.version_option("0.1.0", prog_name="hello")
-def hello():
-    click.echo("Hello World")
+# @click.command("hello")
+# @click.version_option("0.1.0", prog_name="hello")
+# def hello():
+#     click.echo("Hello World")
 
 
 def main():
@@ -251,7 +251,7 @@ if __name__ == '__main__':
     #                                     "./cache/ground_truth_mask2/",
     #                                     "./cache/ground_truth_image2/")
 
-    workspace = init_workspace("D:\\naip_results_batch")
+    # workspace = init_workspace("D:\\naip_results_batch")
 
     # Process a single NAIP imagery
     # naip_path = "../../image/m_4111118_nw_12_060_20210813.tif"
