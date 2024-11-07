@@ -1,7 +1,7 @@
 from typing import Optional, List
 import typer
 from pathlib import Path
-from smartndvi import __app_name__, __version__, ERRORS, config, database, smartndvi_controller, SUCCESS
+from smartndvi import __app_name__, __version__, ERRORS, config, smartndvi_controller, SUCCESS
 from smartndvi.workspace import WorkSpace
 
 DEFAULT_WORK_DIR = Path.home().joinpath("smartndvi_workspace")

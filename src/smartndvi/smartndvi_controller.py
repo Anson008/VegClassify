@@ -4,7 +4,6 @@ import progressbar
 import cv2
 import json
 from smartndvi import DB_READ_ERROR, FILE_ERROR
-from smartndvi.database import DatabaseHandler
 from pathlib import Path
 from typing import List, Dict, NamedTuple, Any
 from utility.toml import TOML
