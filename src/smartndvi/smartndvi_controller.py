@@ -63,6 +63,7 @@ class SmartNDVIController:
         # Get output directories
         output_optimal_ndvi_dir = toml_document["General"]["Output"]["optimal_ndvi"]
         land_cover_maps_dir = toml_document["General"]["Output"]["land_cover_maps"]
+        vegetation_mask_dir = toml_document["General"]["Output"]["vegetation_mask"]
 
         sample_coordinate_file_name = f"{os.path.basename(naip_path)}_naip_sample_xy.npy"
         sample_coordinate_file_path = os.path.join(cache_root_path, sample_coordinate_file_name)
@@ -114,8 +115,9 @@ class SmartNDVIController:
             try:
                 metrics_name = Metrics(land_cover_metrics).value
                 self._generate_land_cover_maps(naip_path,
-                                              optimal_ndvi[metrics_name]["optimal_ndvi"],
-                                              land_cover_maps_dir)
+                                               optimal_ndvi[metrics_name]["optimal_ndvi"],
+                                               land_cover_maps_dir,
+                                               vegetation_mask_dir)
             except ValueError as err:
                 print(f"{err}: invalid metrics name. Land-cover maps not generated.")
 
@@ -140,12 +142,6 @@ class SmartNDVIController:
                                              checkpoint_path: str,
                                              output_mask_dir: str,
                                              output_image_dir: str):
-        # if not util.create_directory(output_mask_dir):
-        #     util.remove_all_files(output_mask_dir)
-        #
-        # if not util.create_directory(output_image_dir):
-        #     util.remove_all_files(output_image_dir)
-
         # Create a NAIP processor
         naip_img = util.read_naip_image(naip_path)
         naip = NAIPImagery(naip_img)
@@ -171,13 +167,12 @@ class SmartNDVIController:
                 ground_truth_gray = ground_truth_gray.astype(np.uint8)
 
                 ground_truth_binary = ground_truth_segs[0].astype(np.uint8)
-                ground_truth_color = NAIPImagery.set_mask_color(ground_truth_binary, (0, 0, 255))
-                combined_ground_truth = cv2.addWeighted(naip_sample_bgr_img, 1, ground_truth_color, 0.5, 0)
+                ground_truth_land_cover = naip_sample.generate_vegetation_cover_map(ground_truth_binary)
 
                 out_mask_path = os.path.join(output_mask_dir, f"ground_truth_mask_{str(i + 1).zfill(n_digits)}.png")
                 out_image_path = os.path.join(output_image_dir, f"ground_truth_image_{str(i + 1).zfill(n_digits)}.png")
                 cv2.imwrite(out_mask_path, ground_truth_gray)
-                cv2.imwrite(out_image_path, combined_ground_truth)
+                cv2.imwrite(out_image_path, ground_truth_land_cover)
                 bar.update(i)
 
     @staticmethod
@@ -202,12 +197,20 @@ class SmartNDVIController:
 
     @staticmethod
     def _generate_land_cover_maps(naip_path: str,
-                                ndvi_threshold: float,
-                                output_dir: str):
+                                  ndvi_threshold: float,
+                                  land_cover_output_dir: str,
+                                  vegetation_mask_output_dir: str):
         naip_img = util.read_naip_image(naip_path)
         naip = NAIPImagery(naip_img)
-        vegetation_cover = naip.generate_vegetation_cover_map(ndvi_threshold)
+        vegetation_mask_binary = naip.generate_vegetation_mask(ndvi_threshold)
 
-        out_filename = f"{os.path.basename(naip_path)}_land_cover.png"
-        out_path = os.path.join(output_dir, out_filename)
-        cv2.imwrite(out_path, vegetation_cover)
+        vegetation_mask_bgr = naip.set_mask_color(vegetation_mask_binary,
+                                                  pos_colors=(84, 163, 49),
+                                                  neg_colors=(185, 252, 247))
+        vegetation_cover = naip.generate_vegetation_cover_map(vegetation_mask_binary)
+
+        filename_base = os.path.basename(naip_path)
+        cv2.imwrite(os.path.join(vegetation_mask_output_dir, f"{filename_base}_vegetation_mask.png"),
+                    vegetation_mask_bgr)
+        cv2.imwrite(os.path.join(land_cover_output_dir, f"{filename_base}_land_cover.png"),
+                    vegetation_cover)

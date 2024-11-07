@@ -53,6 +53,7 @@ class WorkSpace:
         path_list = []
         try:
             path_list.append(self._toml.toml_document["General"]["Output"]["land_cover_maps"])
+            path_list.append(self._toml.toml_document["General"]["Output"]["vegetation_mask"])
             path_list.append(self._toml.toml_document["General"]["Output"]["optimal_ndvi"])
         except KeyError as err:
             print(f"{err}: can't find output path in config file.")

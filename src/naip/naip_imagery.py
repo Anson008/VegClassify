@@ -1,3 +1,4 @@
+from typing import Tuple
 import cv2
 import earthpy.spatial as es
 import numpy as np
@@ -119,25 +120,44 @@ class NAIPImagery:
         naip_data = self._naip_img.values.astype(np.float64)
         return es.normalized_diff(naip_data[3], naip_data[0])
 
-    @staticmethod
-    def set_mask_color(mask_gray: np.ndarray, colors: tuple[int, int, int] = (0, 0, 255)):
+    def set_mask_color(self, mask_binary: np.ndarray,
+                       pos_colors: tuple[int, int, int] = (0, 0, 255),
+                       neg_colors: tuple[int, int, int] = (0, 0, 0)):
         """
         Apply a color specified by colors (B,G,R) to the NDVI mask (binary-classified)
         and return the colored mask.
-        :param mask_gray: np.ndarray of data type "np.uint8", the binary-classified NDVI mask.
-        :param colors: tuple of int, specifing the (B, G, R) values of the color to apply.
+        :param mask_binary: np.ndarray of data type "np.uint8", the binary-classified NDVI mask.
+        :param pos_colors: tuple of int, specifying the (B, G, R) color applying to positive category pixels.
+        :param neg_colors: tuple of int, specifying the (B, G, R) color applying to negative category pixels.
         :return: np.ndarray, colored NDVI mask of shape (height, width, color).
         """
-        res = np.tile(mask_gray, (3, 1, 1)).transpose(1, 2, 0)
+        pos_res = self._set_category_color(mask_binary, pos_colors)
+
+        mask_binary_invert = NAIPImagery._invert_binary_mask(mask_binary)
+        neg_res = NAIPImagery._set_category_color(mask_binary_invert, neg_colors)
+
+        return pos_res + neg_res
+
+    @staticmethod
+    def _invert_binary_mask(mask_binary):
+        return ((mask_binary.astype(np.int32) - 1) * (-1)).astype(np.uint8)
+
+    @staticmethod
+    def _set_category_color(mask_binary, colors: tuple[int, int, int]):
+        res = np.tile(mask_binary, (3, 1, 1)).transpose(1, 2, 0)
         res[:, :, 0] *= colors[0]
         res[:, :, 1] *= colors[1]
         res[:, :, 2] *= colors[2]
         return res
 
-    def generate_vegetation_cover_map(self, ndvi_threshold: float, invert: bool = False) -> np.ndarray:
-        mask_gray = self.generate_vegetation_mask(ndvi_threshold, invert)
-        mask_bgr = NAIPImagery.set_mask_color(mask_gray, (0, 0, 255))
-        return cv2.addWeighted(self.get_bgr_naip(), 1, mask_bgr, 0.5, 0)
+    def generate_vegetation_cover_map(self,
+                                      mask_binary: np.ndarray,
+                                      pos_colors: Tuple[int, int, int] = (0, 0, 255),
+                                      neg_colors: Tuple[int, int, int] = (0, 0, 0)
+                                      ) -> np.ndarray:
+        # mask_gray = self.generate_vegetation_mask(ndvi_threshold, invert)
+        mask_bgr = self.set_mask_color(mask_binary, pos_colors, neg_colors)
+        return cv2.addWeighted(self.get_bgr_naip(), 1, mask_bgr, 0.25, 0)
 
     def generate_vegetation_mask(self,
                                  ndvi_threshold: float,
@@ -150,12 +170,12 @@ class NAIPImagery:
         :return: numpy array, vegetation mask representing if the pixels are green or not.
         """
         ndvi = self.calculate_ndvi()
-        vegetation_mask = np.zeros_like(ndvi, dtype=np.uint8)
-        vegetation_mask[ndvi >= ndvi_threshold] = 1
-        vegetation_mask[ndvi < ndvi_threshold] = 0
+        mask = np.zeros_like(ndvi, dtype=np.uint8)
+        mask[ndvi >= ndvi_threshold] = 1
+        mask[ndvi < ndvi_threshold] = 0
         if invert:
-            vegetation_mask = np.invert(vegetation_mask.astype(np.bool_)).astype(np.uint8)
-        return vegetation_mask
+            mask = np.invert(mask.astype(np.bool_)).astype(np.uint8)
+        return mask
 
     def split_image(self, des_path: str, split_height: int, split_width: int) -> None:
         """
@@ -248,15 +268,13 @@ if __name__ == "__main__":
 
     naip_img = util.read_naip_image(img_path)
     naip = NAIPImagery(naip_img)
-    naip.split_image(util.NAIP_SPLIT_DIR, 1024, 512)
-    shape = naip.naip_img.rio.get_gcps()
-    print(type(shape))
-    print(shape)
-    # print(f"Original NAIP shape: {naip.naip_img.shape}")
-    # naip_slice = naip[:, :100, :100]
-    # print(f"Slice type: {type(naip_slice)}")
-    # print(f"Sliced NAIP shape: {naip_slice.naip_img.shape}")
-    # print(naip_slice.get_center_lon_lat((0, 0), (90, 90)))
+    vegetation_mask = naip.generate_vegetation_mask(0.14)
+    # vegetation_mask_bgr = naip.set_mask_color(vegetation_mask,
+    #                                               pos_colors=(84, 163, 49),
+    #                                               neg_colors=(185, 252, 247))
+    # cv2.imwrite("../../results/test_bgr_mask1.png", vegetation_mask_bgr)
+    land_cover_map = naip.generate_vegetation_cover_map(vegetation_mask)
+    cv2.imwrite("../../results/test_land_cover1-5.png", land_cover_map)
 
 
 

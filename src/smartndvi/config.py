@@ -46,7 +46,6 @@ def _init_config_file() -> int:
 def _create_output_directory(out_path: str) -> int:
     toml = TOML(CONFIG_FILE_PATH)
     general = tomlkit.table()
-    # out_path = Path(out_path)
 
     # Add output root directory
     general.add("ndvi_workspace_root", out_path)
@@ -62,6 +61,7 @@ def _create_output_directory(out_path: str) -> int:
     output = tomlkit.table()
     output.add("output_root", os.path.join(out_path, "output"))
     output.add("land_cover_maps", os.path.join(out_path, "output\\land_cover_maps"))
+    output.add("vegetation_mask", os.path.join(out_path, "output\\vegetation_mask"))
     output.add("optimal_ndvi", os.path.join(out_path, "output\\optimal_ndvi"))
 
     # Add model directory
@@ -80,18 +80,6 @@ def _create_output_directory(out_path: str) -> int:
     except OSError:
         return DB_WRITE_ERROR
     return SUCCESS
-
-
-# def _create_database(db_path: str) -> int:
-#     toml = TOML(CONFIG_FILE_PATH)
-#     general = tomlkit.table()
-#     general.add("database", db_path)
-#     toml.toml_document.add("General", general)
-#     try:
-#         toml.save_config_file(CONFIG_FILE_PATH)
-#     except OSError:
-#         return DB_WRITE_ERROR
-#     return SUCCESS
 
 
 if __name__ == "__main__":
