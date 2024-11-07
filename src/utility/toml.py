@@ -58,9 +58,3 @@ class TOML:
                 tomlkit.dump(self.__toml_document, fp)
         except FileNotFoundError as err:
             print(err)
-
-
-if __name__ == "__main__":
-    toml_path = Path("../configs/config.toml")
-    toml_paser = TOML(toml_path)
-    print(toml_paser)
