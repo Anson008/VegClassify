@@ -44,16 +44,6 @@ def init(
             fg=typer.colors.GREEN
         )
 
-    # db_init_error = database.init_database(Path(db_path))
-    # if db_init_error:
-    #     typer.secho(
-    #         f"Failed to create database with '{ERRORS[db_init_error]}",
-    #         gf=typer.colors.RED,
-    #     )
-    #     raise typer.Exit(1)
-    # else:
-    #     typer.secho(f"The smartndvi database is {db_path}", fg=typer.colors.GREEN)
-
 @app.command(name="optimize")
 def search_optimal_ndvi_threshold(
         naip_file_path: str = typer.Argument(),
@@ -65,10 +55,11 @@ def search_optimal_ndvi_threshold(
         ),
 ) -> None:
     """
-
-    :param naip_file_path:
-    :param land_cover_metrics:
-    :return:
+    Search optimal NDVI threshold for the input NAIP imagery(s)
+    :param naip_file_path: str, path for a single NAIP imagery or a directory containing imagery.
+    :param land_cover_metrics: str, toggle on land-cover generation and choose the optimal NDVI threshold
+    using metrics {"accuracy", "kappa"} by which the threshold is determined. Default is None.
+    :return: None
     """
     controller = get_smartndvi_controller()
     try:
@@ -79,6 +70,10 @@ def search_optimal_ndvi_threshold(
 
 
 def get_smartndvi_controller() -> smartndvi_controller.SmartNDVIController:
+    """
+    Get an instance of SmartNDVIController.
+    :return: SmartNDVIController, an instance of SmartNDVIController.
+    """
     if config.CONFIG_FILE_PATH.exists():
         return smartndvi_controller.SmartNDVIController(Path(config.CONFIG_FILE_PATH))
     else:
@@ -90,6 +85,11 @@ def get_smartndvi_controller() -> smartndvi_controller.SmartNDVIController:
 
 
 def _show_version(value: bool) -> None:
+    """
+    Display application version to console and then quit.
+    :param value: bool, toggle on/off the display of application name and version.
+    :return: None.
+    """
     if value:
         typer.echo(f"{__app_name__} v{__version__}")
         raise typer.Exit()
