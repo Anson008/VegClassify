@@ -78,7 +78,7 @@ class SmartNDVIController:
                                                   ground_truth_image_dir)
 
         # Initialize searching parameters
-        thresholds = tuple(np.arange(0, 0.4, 0.02))
+        thresholds = tuple(np.arange(0, 0.41, 0.02))
         max_metrics_value = {k.value: 0 for k in Metrics}
         optimal_ndvi = {k.value: {"metrics": 0, "optimal_ndvi": -1} for k in Metrics}
         n_thresholds = len(thresholds)
@@ -165,13 +165,13 @@ class SmartNDVIController:
                 _, ground_truth_gray = cv2.threshold(ground_truth_segs[0], 0, 255, cv2.THRESH_BINARY)
                 ground_truth_gray = ground_truth_gray.astype(np.uint8)
 
-                ground_truth_binary = ground_truth_segs[0].astype(np.uint8)
-                ground_truth_land_cover = naip_sample.generate_vegetation_cover_map(ground_truth_binary)
+                # ground_truth_binary = ground_truth_segs[0].astype(np.uint8)
+                # ground_truth_land_cover = naip_sample.generate_vegetation_cover_map(ground_truth_binary)
+                # out_image_path = os.path.join(output_image_dir, f"ground_truth_image_{str(i + 1).zfill(n_digits)}.png")
+                # cv2.imwrite(out_image_path, ground_truth_land_cover)
 
                 out_mask_path = os.path.join(output_mask_dir, f"ground_truth_mask_{str(i + 1).zfill(n_digits)}.png")
-                out_image_path = os.path.join(output_image_dir, f"ground_truth_image_{str(i + 1).zfill(n_digits)}.png")
                 cv2.imwrite(out_mask_path, ground_truth_gray)
-                cv2.imwrite(out_image_path, ground_truth_land_cover)
                 bar.update(i)
 
     @staticmethod
