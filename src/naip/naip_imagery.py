@@ -112,6 +112,12 @@ class NAIPImagery:
         cv2.waitKey(0)
         cv2.destroyWindow(window_name)
 
+    def get_vegetation_by_hsv(self, lower_hue=25, upper_hue=100):
+        lower = np.array([lower_hue, 30, 15])
+        upper = np.array([upper_hue, 255, 255])
+        hsv_img = cv2.cvtColor(self.get_bgr_naip(), cv2.COLOR_BGR2HSV)
+        return cv2.inRange(hsv_img, lower, upper)
+
     def calculate_ndvi(self) -> np.ndarray:
         """
         Calculate the normalized difference (NDVI) of the input NAIP image.
@@ -176,6 +182,12 @@ class NAIPImagery:
         if invert:
             mask = np.invert(mask.astype(np.bool_)).astype(np.uint8)
         return mask
+
+    def integrate_vegetation_mask(self, mask):
+        # naip_img_copy = copy.deepcopy(self.naip_img)
+        naip_img_copy = self.naip_img.isel(band=0)
+        naip_img_copy.values = mask
+        return naip_img_copy
 
     def split_image(self, des_path: str, split_height: int, split_width: int) -> None:
         """
@@ -266,15 +278,22 @@ class NAIPImagery:
 if __name__ == "__main__":
     img_path = "../../image/m_4111118_nw_12_060_20210813.tif"
 
+
     naip_img = util.read_naip_image(img_path)
     naip = NAIPImagery(naip_img)
+    print(naip.naip_img)
+    # print(type(naip.naip_img.values))
+
+
     vegetation_mask = naip.generate_vegetation_mask(0.14)
     # vegetation_mask_bgr = naip.set_mask_color(vegetation_mask,
     #                                               pos_colors=(84, 163, 49),
     #                                               neg_colors=(185, 252, 247))
+    vegetation_mask_integrated = naip.integrate_vegetation_mask(vegetation_mask)
+    vegetation_mask_integrated.rio.to_raster("../../results/test_binary_mask_with_spatial.tif")
     # cv2.imwrite("../../results/test_bgr_mask1.png", vegetation_mask_bgr)
-    land_cover_map = naip.generate_vegetation_cover_map(vegetation_mask)
-    cv2.imwrite("../../results/test_land_cover1-5.png", land_cover_map)
+    # land_cover_map = naip.generate_vegetation_cover_map(vegetation_mask)
+    # cv2.imwrite("../../results/test_land_cover1-5.png", land_cover_map)
 
 
 

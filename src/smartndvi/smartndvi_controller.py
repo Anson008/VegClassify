@@ -3,6 +3,7 @@ import numpy as np
 import progressbar
 import cv2
 import json
+
 from smartndvi import DB_READ_ERROR, FILE_ERROR
 from pathlib import Path
 from typing import List, Dict, NamedTuple, Any
@@ -70,12 +71,15 @@ class SmartNDVIController:
         self._generate_grid_naip_sample(naip_path, sample_coordinate_file_path)
 
         naip_sample_coordinates = util.load_npy_file(sample_coordinate_file_path)
-        self._generate_ground_truth_from_rgb_naip(naip_sample_coordinates,
-                                                  naip_path,
-                                                  model_config_path,
-                                                  model_checkpoint_path,
-                                                  ground_truth_mask_dir,
-                                                  ground_truth_image_dir)
+        # self._generate_ground_truth_from_rgb_naip(naip_sample_coordinates,
+        #                                           naip_path,
+        #                                           model_config_path,
+        #                                           model_checkpoint_path,
+        #                                           ground_truth_mask_dir,
+        #                                           ground_truth_image_dir)
+        self._generate_ground_truth_by_hsv(naip_sample_coordinates,
+                                           naip_path,
+                                           ground_truth_mask_dir)
 
         # Initialize searching parameters
         thresholds = tuple(np.arange(0, 0.41, 0.02))
@@ -133,6 +137,35 @@ class SmartNDVIController:
         naip_sample_xy = naip_sampler.get_sample_coordinates((naip_h, naip_w), (1024, 512))
 
         np.save(sample_output_path, naip_sample_xy)
+
+    @staticmethod
+    def _generate_ground_truth_by_hsv(naip_sample_xy: np.ndarray,
+                                      naip_path: str,
+                                      output_mask_dir: str):
+        # Create a NAIP processor
+        naip_img = util.read_naip_image(naip_path)
+        naip = NAIPImagery(naip_img)
+
+        n_samples = naip_sample_xy.shape[0]
+        n_digits = len(str(n_samples))
+
+        print(f">>> Generating ground truth vegetation mask for {os.path.basename(naip_path)} ...")
+        with progressbar.ProgressBar(max_value=n_samples) as bar:
+            for i in range(n_samples):
+                image_block = ImageBlock(naip_sample_xy[i])
+                tx, ty, bx, by = image_block.get_all_coordinates()
+                naip_sample = naip[:, ty:by + 1, tx:bx + 1]
+
+                ground_truth_gray = naip_sample.get_vegetation_by_hsv(30, 90)
+
+                # ground_truth_binary = ground_truth_segs[0].astype(np.uint8)
+                # ground_truth_land_cover = naip_sample.generate_vegetation_cover_map(ground_truth_binary)
+                # out_image_path = os.path.join(output_image_dir, f"ground_truth_image_{str(i + 1).zfill(n_digits)}.png")
+                # cv2.imwrite(out_image_path, ground_truth_land_cover)
+
+                out_mask_path = os.path.join(output_mask_dir, f"ground_truth_mask_{str(i + 1).zfill(n_digits)}.png")
+                cv2.imwrite(out_mask_path, ground_truth_gray)
+                bar.update(i)
 
     @staticmethod
     def _generate_ground_truth_from_rgb_naip(naip_sample_xy: np.ndarray,
@@ -202,14 +235,17 @@ class SmartNDVIController:
         naip_img = util.read_naip_image(naip_path)
         naip = NAIPImagery(naip_img)
         vegetation_mask_binary = naip.generate_vegetation_mask(ndvi_threshold)
+        vegetation_mask_integrated = naip.integrate_vegetation_mask(vegetation_mask_binary)
 
-        vegetation_mask_bgr = naip.set_mask_color(vegetation_mask_binary,
-                                                  pos_colors=(84, 163, 49),
-                                                  neg_colors=(185, 252, 247))
-        vegetation_cover = naip.generate_vegetation_cover_map(vegetation_mask_binary)
-
+        # vegetation_mask_bgr = naip.set_mask_color(vegetation_mask_binary,
+        #                                           pos_colors=(84, 163, 49),
+        #                                           neg_colors=(185, 252, 247))
         filename_base = os.path.basename(naip_path)
-        cv2.imwrite(os.path.join(vegetation_mask_output_dir, f"{filename_base}_vegetation_mask.png"),
-                    vegetation_mask_bgr)
+        vegetation_mask_integrated.rio.to_raster(os.path.join(vegetation_mask_output_dir, f"{filename_base}_vegetation_mask.tif"))
+
+        # cv2.imwrite(os.path.join(vegetation_mask_output_dir, f"{filename_base}_vegetation_mask.tif"),
+        #             vegetation_mask_integrated)
+
+        vegetation_cover = naip.generate_vegetation_cover_map(vegetation_mask_binary)
         cv2.imwrite(os.path.join(land_cover_output_dir, f"{filename_base}_land_cover.png"),
                     vegetation_cover)
