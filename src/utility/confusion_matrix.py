@@ -82,11 +82,11 @@ class ConfusionMatrix:
         self._tn += tn
 
         # Accumulate FP and FN
-        n_fp = int(np.sum(predicted_mask) / 255 - tp)
-        self._fp += n_fp
+        fp = int(np.sum(predicted_mask) / 255 - tp)
+        self._fp += fp
 
-        n_fn = tp_matrix.size - tp - tn - n_fp
-        self._fn += n_fn
+        fn = tp_matrix.size - tp - tn - fp
+        self._fn += fn
 
     def compute_on_batch_samples(self,
                                  actual_mask_path: str,
