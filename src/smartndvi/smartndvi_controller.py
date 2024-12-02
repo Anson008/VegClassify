@@ -6,7 +6,10 @@ import json
 
 from smartndvi import DB_READ_ERROR, FILE_ERROR
 from pathlib import Path
-from typing import List, Dict, NamedTuple, Any
+from typing import Tuple, Dict, NamedTuple, Any, Optional
+
+from utility.confusion_matrix import ConfusionMatrix
+from utility.mask_factory import FullMaskCreator, RandomSampledMask, RandomSampledMaskCreator
 from utility.toml import TOML
 from utility import util
 from naip.naip_imagery import NAIPImagery
@@ -68,10 +71,11 @@ class SmartNDVIController:
         sample_coordinate_file_name = f"{os.path.basename(naip_path)}_naip_sample_xy.npy"
         sample_coordinate_file_path = os.path.join(cache_root_path, sample_coordinate_file_name)
 
-        self._generate_grid_naip_sample(naip_path, sample_coordinate_file_path)
+        sample_shape = (1024, 512)
+        self._generate_grid_naip_sample(naip_path, sample_coordinate_file_path, sample_shape)
 
         naip_sample_coordinates = util.load_npy_file(sample_coordinate_file_path)
-        # self._generate_ground_truth_from_rgb_naip(naip_sample_coordinates,
+        # self._generate_ground_truth_by_deep_learning(naip_sample_coordinates,
         #                                           naip_path,
         #                                           model_config_path,
         #                                           model_checkpoint_path,
@@ -79,7 +83,8 @@ class SmartNDVIController:
         #                                           ground_truth_image_dir)
         self._generate_ground_truth_by_hsv(naip_sample_coordinates,
                                            naip_path,
-                                           ground_truth_mask_dir)
+                                           ground_truth_mask_dir,
+                                           ground_truth_image_dir)
 
         # Initialize searching parameters
         thresholds = tuple(np.arange(0, 0.41, 0.02))
@@ -96,8 +101,23 @@ class SmartNDVIController:
                                                      naip_sample_mask_dir,
                                                      thresholds[i])
 
-                cm = util.get_confusion_matrix_on_naip(naip_sample_mask_dir,
-                                                       ground_truth_mask_dir)
+                # cm = util.get_confusion_matrix_on_naip(naip_sample_mask_dir,
+                #                                        ground_truth_mask_dir)
+
+                # cm = util.get_confusion_matrix_with_random_sample(naip_sample_mask_dir,
+                #                                        ground_truth_mask_dir)
+
+                # My module
+                confusion_matrix = ConfusionMatrix()
+                # full_mask = FullMaskCreator(sample_shape[0], sample_shape[1])
+                random_mask = RandomSampledMaskCreator(height=sample_shape[0],
+                                                width=sample_shape[1],
+                                                sample_size=100,
+                                                seed=95279527)
+                confusion_matrix.compute_on_batch_samples(ground_truth_mask_dir,
+                                                          naip_sample_mask_dir,
+                                                          random_mask)
+                cm = confusion_matrix.get_confusion_matrix()
 
                 for metrics in Metrics:
                     metrics_name = metrics.value
@@ -126,7 +146,16 @@ class SmartNDVIController:
 
 
     @staticmethod
-    def _generate_grid_naip_sample(naip_path: str, sample_output_path: str):
+    def _generate_grid_naip_sample(naip_path: str,
+                                   sample_output_path: str,
+                                   sample_shape: Tuple[int, int]) -> None:
+        """
+        A helper function to generate grid sample coordinates (tx, ty, bx, by) on a NAIP imagery.
+        :param naip_path: str, full path of NAIP.
+        :param sample_output_path: str, full path of the output file.
+        :param sample_shape: tuple of int, specifying (height, width) of the individual sample.
+        :return: None.
+        """
         if not sample_output_path.endswith(".npy"):
             raise Exception("Output file must be of type .npy")
 
@@ -134,14 +163,15 @@ class SmartNDVIController:
         naip = NAIPImagery(naip_img)
         naip_h, naip_w = naip.naip_img.shape[1:]
         naip_sampler = NaipSampler(GridSample())
-        naip_sample_xy = naip_sampler.get_sample_coordinates((naip_h, naip_w), (1024, 512))
+        naip_sample_xy = naip_sampler.get_sample_coordinates((naip_h, naip_w), sample_shape)
 
         np.save(sample_output_path, naip_sample_xy)
 
     @staticmethod
     def _generate_ground_truth_by_hsv(naip_sample_xy: np.ndarray,
                                       naip_path: str,
-                                      output_mask_dir: str):
+                                      output_mask_dir: str,
+                                      output_image_dir: str):
         # Create a NAIP processor
         naip_img = util.read_naip_image(naip_path)
         naip = NAIPImagery(naip_img)
@@ -157,18 +187,18 @@ class SmartNDVIController:
                 naip_sample = naip[:, ty:by + 1, tx:bx + 1]
 
                 ground_truth_gray = naip_sample.get_vegetation_by_hsv(30, 90)
-
+                _, ground_truth_binary = cv2.threshold(ground_truth_gray, 0, 1, cv2.THRESH_BINARY)
                 # ground_truth_binary = ground_truth_segs[0].astype(np.uint8)
-                # ground_truth_land_cover = naip_sample.generate_vegetation_cover_map(ground_truth_binary)
-                # out_image_path = os.path.join(output_image_dir, f"ground_truth_image_{str(i + 1).zfill(n_digits)}.png")
-                # cv2.imwrite(out_image_path, ground_truth_land_cover)
+                ground_truth_land_cover = naip_sample.generate_vegetation_cover_map(ground_truth_binary)
+                out_image_path = os.path.join(output_image_dir, f"ground_truth_image_{str(i + 1).zfill(n_digits)}.png")
+                cv2.imwrite(out_image_path, ground_truth_land_cover)
 
                 out_mask_path = os.path.join(output_mask_dir, f"ground_truth_mask_{str(i + 1).zfill(n_digits)}.png")
                 cv2.imwrite(out_mask_path, ground_truth_gray)
                 bar.update(i)
 
     @staticmethod
-    def _generate_ground_truth_from_rgb_naip(naip_sample_xy: np.ndarray,
+    def _generate_ground_truth_by_deep_learning(naip_sample_xy: np.ndarray,
                                              naip_path: str,
                                              config_path: str,
                                              checkpoint_path: str,
@@ -198,10 +228,10 @@ class SmartNDVIController:
                 _, ground_truth_gray = cv2.threshold(ground_truth_segs[0], 0, 255, cv2.THRESH_BINARY)
                 ground_truth_gray = ground_truth_gray.astype(np.uint8)
 
-                # ground_truth_binary = ground_truth_segs[0].astype(np.uint8)
-                # ground_truth_land_cover = naip_sample.generate_vegetation_cover_map(ground_truth_binary)
-                # out_image_path = os.path.join(output_image_dir, f"ground_truth_image_{str(i + 1).zfill(n_digits)}.png")
-                # cv2.imwrite(out_image_path, ground_truth_land_cover)
+                ground_truth_binary = ground_truth_segs[0].astype(np.uint8)
+                ground_truth_land_cover = naip_sample.generate_vegetation_cover_map(ground_truth_binary)
+                out_image_path = os.path.join(output_image_dir, f"ground_truth_image_{str(i + 1).zfill(n_digits)}.png")
+                cv2.imwrite(out_image_path, ground_truth_land_cover)
 
                 out_mask_path = os.path.join(output_mask_dir, f"ground_truth_mask_{str(i + 1).zfill(n_digits)}.png")
                 cv2.imwrite(out_mask_path, ground_truth_gray)
