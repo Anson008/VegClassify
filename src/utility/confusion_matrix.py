@@ -1,10 +1,7 @@
 import os
-
-import cv2
 import numpy as np
-from abc import ABC, abstractmethod
-
 from utility.mask_factory import MaskCreator
+from typing import Optional
 
 
 class ConfusionMatrix:
@@ -46,7 +43,11 @@ class ConfusionMatrix:
     def fn(self, value):
         self._fn = value
 
-    def get_kappa(self):
+    def get_kappa(self) -> Optional[float]:
+        """
+        Calculate Cohen's kappa of the confusion matrix
+        :return: float or None. Kappa value if exists. Otherwise, None.
+        """
         try:
             numerator = self._tp * self._tn - self._fp * self._fn
             denominator = ((self._tp + self._fp) * (self._fp + self._tn) +
@@ -54,9 +55,13 @@ class ConfusionMatrix:
             return 2.0 * numerator / denominator
         except ZeroDivisionError as err:
             print(f"{err}: Failed to calculate kappa")
-            return -1
+            return
 
-    def get_accuracy(self):
+    def get_accuracy(self) -> Optional[float]:
+        """
+        Calculate accuracy of the confusion matrix
+        :return: float or None. Accuracy value if exists. Otherwise, None
+        """
         try:
             return 1.0 * (self._tp + self._tn) / (self._tp + self._fp + self._tn + self._fn)
         except ZeroDivisionError as err:
@@ -71,7 +76,15 @@ class ConfusionMatrix:
                 "accuracy": self.get_accuracy(),
                 "kappa": self.get_kappa()}
 
-    def compute_on_single_sample(self, actual_mask: np.ndarray, predicted_mask: np.ndarray) -> None:
+    def compute_on_single_sample(self,
+                                 actual_mask: np.ndarray,
+                                 predicted_mask: np.ndarray) -> None:
+        """
+        Compute the confusion matrix of a given actual mask and predicted mask.
+        :param actual_mask: np.ndarray, 2D array representing the actual green space mask.
+        :param predicted_mask: np.ndarray, 2D array representing the predicted green space mask.
+        :return: None
+        """
         tp_matrix = np.logical_and(actual_mask, predicted_mask)
         tp = int(np.sum(tp_matrix))
         self._tp += tp
@@ -92,6 +105,13 @@ class ConfusionMatrix:
                                  actual_mask_path: str,
                                  predicted_mask_path: str,
                                  mask_creator: MaskCreator) -> None:
+        """
+        Compute the confusion matrix on a batch of actual and predicted masks.
+        :param actual_mask_path: str, directory to the actual masks.
+        :param predicted_mask_path: str, directory to the predicted masks.
+        :param mask_creator: MaskCreator, an object of the mask factory.
+        :return: None.
+        """
         actual_mask_fp = os.scandir(actual_mask_path)
         predicted_mask_fp = os.scandir(predicted_mask_path)
 
