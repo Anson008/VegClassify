@@ -113,7 +113,7 @@ class NAIPImagery:
         cv2.destroyWindow(window_name)
 
     def get_vegetation_by_hsv(self, lower_hue=30, upper_hue=90):
-        lower = np.array([lower_hue, 30, 15])
+        lower = np.array([lower_hue, 30, 10])
         upper = np.array([upper_hue, 255, 255])
         hsv_img = cv2.cvtColor(self.get_bgr_naip(), cv2.COLOR_BGR2HSV)
         return cv2.inRange(hsv_img, lower, upper)
