@@ -6,6 +6,7 @@ import numpy as np
 import rioxarray as rxr
 # import constants as const
 from utility.confusion_matrix import ConfusionMatrix
+from sklearn.metrics import confusion_matrix
 
 # Constants
 BETA = 1.1
@@ -219,18 +220,84 @@ def get_confusion_matrix_on_naip(naip_mask_path, ground_truth_mask_path):
 
     for naip_mask, gt_mask in zip(naip_file_obj, gt_file_obj):
 
-        naip_mask_img = cv2.imread(os.path.join(naip_mask_path, naip_mask.name))
-        gt_mask_img = cv2.imread(os.path.join(ground_truth_mask_path, gt_mask.name))
+        naip_mask_img = cv2.imread(os.path.join(naip_mask_path, naip_mask.name),
+                                   cv2.IMREAD_GRAYSCALE).flatten()
+        gt_mask_img = cv2.imread(os.path.join(ground_truth_mask_path, gt_mask.name),
+                                 cv2.IMREAD_GRAYSCALE).flatten()
+        # print(f"NAIP: {naip_mask_img.shape}, {naip_mask_img.dtype}, {naip_mask_img.min()}, {naip_mask_img.max()}")
+        # print(f"GT: {gt_mask_img.shape}, {gt_mask_img.dtype}, {gt_mask_img.min()}, {gt_mask_img.max()}")
 
-        # Accumulate TP and TN
-        gt_and_naip = np.logical_and(gt_mask_img, naip_mask_img)
-        n_tp = int(np.sum(gt_and_naip))
-        cm_obj.tp += n_tp
-        cm_obj.tn += int(gt_and_naip.size) - n_tp
+        # # Accumulate TP and TN
+        # tp_matrix = np.logical_and(gt_mask_img, naip_mask_img)
+        # n_tp = int(np.sum(tp_matrix))
+        # cm_obj.tp += n_tp
+        #
+        # tn_matrix = np.logical_and(np.logical_not(gt_mask_img), np.logical_not(naip_mask_img))
+        # n_tn = int(np.sum(tn_matrix))
+        # cm_obj.tn += n_tn
+        #
+        # # Accumulate FP and FN
+        # n_fp = int(np.sum(naip_mask_img) / 255 - n_tp)
+        # cm_obj.fp += n_fp
+        #
+        # n_fn = tp_matrix.size - n_tp - n_tn - n_fp
+        # cm_obj.fn += n_fn
 
-        # Accumulate FP and FN
-        cm_obj.fp += int(np.sum(np.logical_and(np.logical_not(gt_mask_img), naip_mask_img)))
-        cm_obj.fn += int(np.sum(np.logical_and(gt_mask_img, np.logical_not(naip_mask_img))))
+        cm = confusion_matrix(gt_mask_img, naip_mask_img)
+        tn, fp, fn, tp = cm.ravel()
+        cm_obj.tn += tn
+        cm_obj.fp += fp
+        cm_obj.fn += fn
+        cm_obj.tp += tp
+
+    return cm_obj.get_confusion_matrix()
+
+
+def get_confusion_matrix_with_random_sample(naip_mask_path, ground_truth_mask_path):
+    naip_file_obj = os.scandir(naip_mask_path)
+    gt_file_obj = os.scandir(ground_truth_mask_path)
+    cm_obj = ConfusionMatrix()
+
+    index_array = np.arange(512*1024)
+    rng = np.random.default_rng(9527)
+    for naip_mask, gt_mask in zip(naip_file_obj, gt_file_obj):
+        naip_mask_img = cv2.imread(os.path.join(naip_mask_path, naip_mask.name),
+                                   cv2.IMREAD_GRAYSCALE).flatten()
+        gt_mask_img = cv2.imread(os.path.join(ground_truth_mask_path, gt_mask.name),
+                                   cv2.IMREAD_GRAYSCALE).flatten()
+        random_idx = rng.choice(index_array, 100, replace=False)
+
+        # random_idx = np.unravel_index(random_idx, naip_mask_img.shape)
+        # naip_mask_sample = naip_mask_img[random_idx[0], random_idx[1]]
+        # gt_mask_sample = gt_mask_img[random_idx[0], random_idx[1]]
+
+        # sk-learn cm
+        naip_mask_sample = naip_mask_img[random_idx]
+        gt_mask_sample = gt_mask_img[random_idx]
+
+        # # Accumulate TP and TN
+        # tp_matrix = np.logical_and(gt_mask_sample, naip_mask_sample)
+        # n_tp = int(np.sum(tp_matrix))
+        # cm_obj.tp += n_tp
+        #
+        # tn_matrix = np.logical_and(np.logical_not(gt_mask_sample), np.logical_not(naip_mask_sample))
+        # n_tn = int(np.sum(tn_matrix))
+        # cm_obj.tn += n_tn
+        #
+        # # Accumulate FP and FN
+        # n_fp = int(np.sum(naip_mask_sample) / 255 - n_tp)
+        # cm_obj.fp += n_fp
+        #
+        # n_fn = tp_matrix.size - n_tp - n_tn - n_fp
+        # cm_obj.fn += n_fn
+
+
+        cm = confusion_matrix(gt_mask_sample, naip_mask_sample)
+        tn, fp, fn, tp = cm.ravel()
+        cm_obj.tn += tn
+        cm_obj.fp += fp
+        cm_obj.fn += fn
+        cm_obj.tp += tp
 
     return cm_obj.get_confusion_matrix()
 
