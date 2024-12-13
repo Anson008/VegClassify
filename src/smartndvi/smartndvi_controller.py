@@ -4,7 +4,6 @@ import progressbar
 import cv2
 import json
 
-from smartndvi import DB_READ_ERROR, FILE_ERROR
 from pathlib import Path
 from typing import Tuple, Dict, NamedTuple, Any, Optional
 
@@ -111,9 +110,9 @@ class SmartNDVIController:
                 confusion_matrix = ConfusionMatrix()
                 # full_mask = FullMaskCreator(sample_shape[0], sample_shape[1])
                 random_mask = RandomSampledMaskCreator(height=sample_shape[0],
-                                                width=sample_shape[1],
-                                                sample_size=100,
-                                                seed=95279527)
+                                                       width=sample_shape[1],
+                                                       sample_size=1000,
+                                                       seed=95279527)
                 confusion_matrix.compute_on_batch_samples(ground_truth_mask_dir,
                                                           naip_sample_mask_dir,
                                                           random_mask)
