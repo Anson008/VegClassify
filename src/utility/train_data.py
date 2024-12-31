@@ -1,9 +1,11 @@
+import os
+import cv2
+import numpy as np
+from typing import Dict
 from naip.naip_imagery import NAIPImagery
 from naip.naip_sampler import NaipSampler
 from naip.sample_method import GridSample
 from utility import util
-import os
-import cv2
 from utility.image_block import ImageBlock
 
 
@@ -65,10 +67,44 @@ class TrainDataGenerator:
                         cv2.imwrite(out_image_path, naip_sample_bgr)
 
 
+class NormalizationStatistics:
+    def __init__(self, train_img_dir: str):
+        self._train_img_dir = train_img_dir
+
+    @property
+    def img_dir(self):
+        return self._train_img_dir
+
+    @img_dir.setter
+    def img_dir(self, new_path: str):
+        self._train_img_dir = new_path
+
+    def compute_mean_and_std(self, height: int, width: int) -> Dict[str, tuple]:
+        x = np.zeros((height, width, 3))
+        x_squared = np.zeros((height, width, 3))
+        count = 0
+        with os.scandir(self._train_img_dir) as entries:
+            for entry in entries:
+                if entry.is_file() and entry.name.endswith(".jpg"):
+                    pixels = cv2.imread(entry.path).astype(np.float64)
+                    x += pixels
+                    x_squared += np.square(pixels)
+                    count += 1
+        mean = np.mean(x / count, axis=(0, 1))
+        mean_of_squared = np.mean(x_squared / count, axis=(0, 1))
+        std = np.sqrt(mean_of_squared - np.square(mean))
+        return {"mean": tuple(mean), 'std': tuple(std)}
+
+
 if __name__ == "__main__":
-    naip_dir = "D:/NAIP/"
-    output_dir = "D:/naip_split/"
-    train_data_generator = TrainDataGenerator(naip_dir)
-    train_data_generator.generate_train_data(output_dir)
+    # naip_dir = "D:/NAIP/"
+    # output_dir = "D:/naip_split/"
+    # train_data_generator = TrainDataGenerator(naip_dir)
+    # train_data_generator.generate_train_data(output_dir)
+
+    train_img_dir = "D:\\DeepGreenSpace_Train_Data\\Labeled\\Naip_National_Labeled_100_voc\\JPEGImages"
+    norm_statistics = NormalizationStatistics(train_img_dir)
+    res = norm_statistics.compute_mean_and_std(1024, 512)
+    print(res)
 
 
