@@ -32,7 +32,7 @@ def generate_test_masks():
 
     return test_masks
 
-def test_compute_on_single_sample(actual_mask, predicted_mask):
+def compute_on_single_sample(actual_mask, predicted_mask):
     my_cm = ConfusionMatrix()
     my_cm.compute_on_single_sample(actual_mask, predicted_mask)
     my_cm_res = my_cm.get_confusion_matrix()
@@ -51,4 +51,4 @@ def test_all_single_samples(generate_test_masks):
     test_masks = generate_test_masks
 
     for actual_mask, predicted_mask in test_masks:
-        test_compute_on_single_sample(actual_mask, predicted_mask)
+        compute_on_single_sample(actual_mask, predicted_mask)
