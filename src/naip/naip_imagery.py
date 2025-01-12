@@ -1,6 +1,5 @@
 from typing import Tuple
 import cv2
-import earthpy.spatial as es
 import numpy as np
 import os
 from utility import util
@@ -15,7 +14,6 @@ class NAIPImagery:
         :param naip_img: xarray.DataArray, the input NAIP image
         """
         self._naip_img = naip_img
-        self._ndvi = None
 
     def __getitem__(self, index):
         return NAIPImagery(self._naip_img[index])
@@ -33,10 +31,6 @@ class NAIPImagery:
         :param: xarray.DataArray, a new NAIP image
         """
         self._naip_img = new_naip_img
-
-    @property
-    def ndvi(self) -> np.ndarray | None:
-        return self._ndvi
 
     def get_center(self) -> tuple[int, int]:
         """
@@ -124,7 +118,7 @@ class NAIPImagery:
         :return: numpy array, NDVI results
         """
         naip_data = self._naip_img.values.astype(np.float64)
-        return es.normalized_diff(naip_data[3], naip_data[0])
+        return (naip_data[3] - naip_data[0]) / (naip_data[3] + naip_data[0])
 
     def set_mask_color(self, mask_binary: np.ndarray,
                        pos_colors: tuple[int, int, int] = (0, 0, 255),
