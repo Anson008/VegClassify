@@ -45,3 +45,19 @@ def test_data_array_2d_update():
     data_array[0, 0] = new_value
 
     assert data_array[0, 0] == new_value
+
+
+def test_save_to_csv():
+    n_rows = 3
+    col_names = ("NDVI_Threshold", "Kappa")
+    data_array = DataArray2D(n_rows, col_names)
+    ndvi_step = 0.05
+    kappa_step = 0.1
+    file_path = "./temp_test_files/test_save_to_csv.csv"
+
+    for i in range(n_rows):
+        for j in range(len(col_names)):
+            data_array[i, 0] = 0.1 + i * ndvi_step
+            data_array[i, 1] = 0.7 + i * kappa_step
+
+
