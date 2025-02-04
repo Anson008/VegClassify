@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import pandas as pd
 import progressbar
 import cv2
 import json
@@ -18,10 +19,12 @@ from Inference.deep_recognizer import DeepGreenSpaceRecognizer
 from utility.image_block import ImageBlock
 from enum import Enum
 
+from vegetation_index.data_persistence import DataArray2D
+
 
 class Metrics(Enum):
-    KAPPA = "kappa"
-    ACCURACY = "accuracy"
+    kappa = 0
+    accuracy = 1
 
 
 class CurrentOptimalNDVI(NamedTuple):
@@ -54,7 +57,7 @@ class SmartNDVIController:
         model_config_path = os.path.join(toml_document["General"]["Model"]["config"],
                                          "fcn_aux-hr48_256x512_80k_singlegreen.py")
         model_checkpoint_path = os.path.join(toml_document["General"]["Model"]["checkpoint"],
-                                             "iter_1000.pth")
+                                             "iter_16000.pth")
 
         # Get cache directories
         cache_root_path = toml_document["General"]["Cache"]["cache_root"]
@@ -74,24 +77,25 @@ class SmartNDVIController:
         self._generate_grid_naip_sample(naip_path, sample_coordinate_file_path, sample_shape)
 
         naip_sample_coordinates = util.load_npy_file(sample_coordinate_file_path)
-        # self._generate_ground_truth_by_deep_learning(naip_sample_coordinates,
-        #                                           naip_path,
-        #                                           model_config_path,
-        #                                           model_checkpoint_path,
-        #                                           ground_truth_mask_dir,
-        #                                           ground_truth_image_dir)
-        self._generate_ground_truth_by_hsv(naip_sample_coordinates,
-                                           naip_path,
-                                           ground_truth_mask_dir,
-                                           ground_truth_image_dir)
+        self._generate_ground_truth_by_deep_learning(naip_sample_coordinates,
+                                                  naip_path,
+                                                  model_config_path,
+                                                  model_checkpoint_path,
+                                                  ground_truth_mask_dir,
+                                                  ground_truth_image_dir)
+        # self._generate_ground_truth_by_hsv(naip_sample_coordinates,
+        #                                    naip_path,
+        #                                    ground_truth_mask_dir,
+        #                                    ground_truth_image_dir)
 
         # Initialize searching parameters
         thresholds = tuple(np.arange(0, 0.41, 0.02))
-        max_metrics_value = {k.value: 0 for k in Metrics}
-        optimal_ndvi = {k.value: {"metrics": 0, "optimal_ndvi": -1} for k in Metrics}
+        max_metrics_value = {k.name: 0 for k in Metrics}
+        optimal_ndvi = {k.name: {"metrics_value": 0, "optimal_ndvi": -1} for k in Metrics}
         n_thresholds = len(thresholds)
         print(f">>> Searching optimal NDVI threshold for {os.path.basename(naip_path)} ...")
 
+        opt_data_array = np.zeros((n_thresholds, len(Metrics) + 1), dtype=np.float64)
         with progressbar.ProgressBar(max_value=n_thresholds) as bar:
             for i in range(n_thresholds):
                 util.remove_all_files(naip_sample_mask_dir)
@@ -118,24 +122,30 @@ class SmartNDVIController:
                                                           random_mask)
                 cm = confusion_matrix.get_confusion_matrix()
 
+                opt_data_array[i, 0] = thresholds[i]
                 for metrics in Metrics:
-                    metrics_name = metrics.value
-                    if cm[metrics_name] > max_metrics_value[metrics_name]:
+                    opt_data_array[i, metrics.value + 1] = cm[metrics.name]
+                    if cm[metrics.name] > max_metrics_value[metrics.name]:
                         # Update maximum metrics value
-                        max_metrics_value[metrics_name] = cm[metrics_name]
+                        max_metrics_value[metrics.name] = cm[metrics.name]
 
                         # Record maximum metrics value and corresponding optimal NDVI threshold
-                        optimal_ndvi[metrics_name]["metrics"] = cm[metrics_name]
-                        optimal_ndvi[metrics_name]["optimal_ndvi"] = thresholds[i]
+                        optimal_ndvi[metrics.name]["metrics"] = cm[metrics.name]
+                        optimal_ndvi[metrics.name]["optimal_ndvi"] = thresholds[i]
                 bar.update(i)
         output_optimal_ndvi_path = os.path.join(output_optimal_ndvi_dir,
                                                 f"{os.path.basename(naip_path)}_optimal_ndvi.json")
         with open(output_optimal_ndvi_path, "w") as outfile:
             outfile.write(json.dumps(optimal_ndvi, indent=4))
 
+        opt_curve_data_path = os.path.join(output_optimal_ndvi_dir,
+                                           "opt_curve_data.csv")
+        df = pd.DataFrame(opt_data_array, columns=["ndvi_threshold", Metrics(0).name, Metrics(1).name])
+        df.to_csv(opt_curve_data_path, index=False)
+
         if land_cover_metrics is not None:
             try:
-                metrics_name = Metrics(land_cover_metrics).value
+                metrics_name = Metrics[land_cover_metrics].name
                 self._generate_land_cover_maps(naip_path,
                                                optimal_ndvi[metrics_name]["optimal_ndvi"],
                                                land_cover_maps_dir,
