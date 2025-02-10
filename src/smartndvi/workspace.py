@@ -37,12 +37,11 @@ class WorkSpace:
         """
         path_list = []
         try:
-            path_list.append(self._toml.toml_document["General"]["Cache"]["ground_truth_image"])
-            path_list.append(self._toml.toml_document["General"]["Cache"]["ground_truth_mask"])
-            path_list.append(self._toml.toml_document["General"]["Cache"]["naip_sample_mask"])
+            for path in self._toml.toml_document["General"]["Cache"].values():
+                path_list.append(path)
         except KeyError as err:
             print(f"{err}: can't find cache path in config file.")
-            return
+            return None
         return path_list
 
     def get_output_paths(self) -> List[str] | None:
@@ -52,12 +51,14 @@ class WorkSpace:
         """
         path_list = []
         try:
-            path_list.append(self._toml.toml_document["General"]["Output"]["land_cover_maps"])
-            path_list.append(self._toml.toml_document["General"]["Output"]["vegetation_mask"])
-            path_list.append(self._toml.toml_document["General"]["Output"]["optimal_ndvi"])
+            for path in self._toml.toml_document["General"]["Output"].values():
+                path_list.append(path)
+            # path_list.append(self._toml.toml_document["General"]["Output"]["land_cover_maps"])
+            # path_list.append(self._toml.toml_document["General"]["Output"]["vegetation_mask"])
+            # path_list.append(self._toml.toml_document["General"]["Output"]["optimal_ndvi"])
         except KeyError as err:
             print(f"{err}: can't find output path in config file.")
-            return
+            return None
         return path_list
 
     def get_model_paths(self) -> List[str] | None:
@@ -67,11 +68,13 @@ class WorkSpace:
         """
         path_list = []
         try:
-            path_list.append(self._toml.toml_document["General"]["Model"]["config"])
-            path_list.append(self._toml.toml_document["General"]["Model"]["checkpoint"])
+            for path in self._toml.toml_document["General"]["Model"]:
+                path_list.append(path)
+            # path_list.append(self._toml.toml_document["General"]["Model"]["config"])
+            # path_list.append(self._toml.toml_document["General"]["Model"]["checkpoint"])
         except KeyError as err:
             print(f"{err}: can't find output path in config file.")
-            return
+            return None
         return path_list
 
     def get_workspace_root(self):

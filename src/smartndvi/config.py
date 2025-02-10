@@ -55,6 +55,7 @@ def _create_output_directory(out_path: str) -> int:
     cache.add("cache_root", os.path.join(out_path, "cache"))
     cache.add("ground_truth_image", os.path.join(out_path, "cache\\ground_truth_image"))
     cache.add("ground_truth_mask", os.path.join(out_path, "cache\\ground_truth_mask"))
+    cache.add("ground_truth_landcover", os.path.join(out_path, "cache\\ground_truth_landcover"))
     cache.add("naip_sample_mask", os.path.join(out_path, "cache\\naip_sample_mask"))
 
     # Add output directory

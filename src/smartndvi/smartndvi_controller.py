@@ -63,6 +63,7 @@ class SmartNDVIController:
         cache_root_path = toml_document["General"]["Cache"]["cache_root"]
         ground_truth_mask_dir = toml_document["General"]["Cache"]["ground_truth_mask"]
         ground_truth_image_dir = toml_document["General"]["Cache"]["ground_truth_image"]
+        ground_truth_landcover_dir = toml_document["General"]["Cache"]["ground_truth_landcover"]
         naip_sample_mask_dir = toml_document["General"]["Cache"]["naip_sample_mask"]
 
         # Get output directories
@@ -78,11 +79,12 @@ class SmartNDVIController:
 
         naip_sample_coordinates = util.load_npy_file(sample_coordinate_file_path)
         self._generate_ground_truth_by_deep_learning(naip_sample_coordinates,
-                                                  naip_path,
-                                                  model_config_path,
-                                                  model_checkpoint_path,
-                                                  ground_truth_mask_dir,
-                                                  ground_truth_image_dir)
+                                                     naip_path,
+                                                     model_config_path,
+                                                     model_checkpoint_path,
+                                                     ground_truth_mask_dir,
+                                                     ground_truth_image_dir,
+                                                     ground_truth_landcover_dir)
         # self._generate_ground_truth_by_hsv(naip_sample_coordinates,
         #                                    naip_path,
         #                                    ground_truth_mask_dir,
@@ -212,7 +214,12 @@ class SmartNDVIController:
                                              config_path: str,
                                              checkpoint_path: str,
                                              output_mask_dir: str,
-                                             output_image_dir: str):
+                                             output_image_dir: str,
+                                             output_landcover_dir: str):
+        util.remove_all_files(output_mask_dir)
+        util.remove_all_files(output_image_dir)
+        util.remove_all_files(output_landcover_dir)
+
         # Create a NAIP processor
         naip_img = util.read_naip_image(naip_path)
         naip = NAIPImagery(naip_img)
@@ -239,11 +246,15 @@ class SmartNDVIController:
 
                 ground_truth_binary = ground_truth_segs[0].astype(np.uint8)
                 ground_truth_land_cover = naip_sample.generate_vegetation_cover_map(ground_truth_binary)
-                out_image_path = os.path.join(output_image_dir, f"ground_truth_image_{str(i + 1).zfill(n_digits)}.png")
-                cv2.imwrite(out_image_path, ground_truth_land_cover)
+                out_landcover_path = os.path.join(output_landcover_dir, f"ground_truth_landcover_{str(i + 1).zfill(n_digits)}.png")
+                cv2.imwrite(out_landcover_path, ground_truth_land_cover)
 
                 out_mask_path = os.path.join(output_mask_dir, f"ground_truth_mask_{str(i + 1).zfill(n_digits)}.png")
                 cv2.imwrite(out_mask_path, ground_truth_gray)
+
+                out_image_path = os.path.join(output_image_dir, f"ground_truth_image_{str(i + 1).zfill(n_digits)}.png")
+                cv2.imwrite(out_image_path, naip_sample.get_bgr_naip())
+
                 bar.update(i)
 
     @staticmethod
