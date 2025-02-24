@@ -1,8 +1,7 @@
 import pandas as pd
-import numpy as np
 import pytest
 
-from pathlib import Path, PurePath
+from pathlib import Path
 from vegetation_index.data_persistence import DataArray2D
 
 
