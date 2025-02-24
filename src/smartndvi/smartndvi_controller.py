@@ -61,9 +61,9 @@ class SmartNDVIController:
 
         # Get cache directories
         cache_root_path = toml_document["General"]["Cache"]["cache_root"]
-        ground_truth_mask_dir = toml_document["General"]["Cache"]["ground_truth_mask"]
-        ground_truth_image_dir = toml_document["General"]["Cache"]["ground_truth_image"]
-        ground_truth_landcover_dir = toml_document["General"]["Cache"]["ground_truth_landcover"]
+        ground_truth_mask_root_dir = toml_document["General"]["Cache"]["ground_truth_mask"]
+        ground_truth_image_root_dir = toml_document["General"]["Cache"]["ground_truth_image"]
+        ground_truth_landcover_root_dir = toml_document["General"]["Cache"]["ground_truth_landcover"]
         naip_sample_mask_dir = toml_document["General"]["Cache"]["naip_sample_mask"]
 
         # Get output directories
@@ -77,7 +77,12 @@ class SmartNDVIController:
         sample_shape = (1024, 512)
         self._generate_grid_naip_sample(naip_path, sample_coordinate_file_path, sample_shape)
 
+        naip_basename = os.path.basename(naip_path)[:-4]
+        ground_truth_mask_dir = os.path.join(ground_truth_mask_root_dir, naip_basename)
+        ground_truth_image_dir = os.path.join(ground_truth_image_root_dir, naip_basename)
+        ground_truth_landcover_dir = os.path.join(ground_truth_landcover_root_dir, naip_basename)
         naip_sample_coordinates = util.load_npy_file(sample_coordinate_file_path)
+
         self._generate_ground_truth_by_deep_learning(naip_sample_coordinates,
                                                      naip_path,
                                                      model_config_path,
@@ -93,7 +98,7 @@ class SmartNDVIController:
         # Initialize searching parameters
         thresholds = tuple(np.arange(0, 0.41, 0.02))
         max_metrics_value = {k.name: 0 for k in Metrics}
-        optimal_ndvi = {k.name: {"metrics_value": 0, "optimal_ndvi": -1} for k in Metrics}
+        optimal_ndvi = {k.name: {"metrics": 0, "optimal_ndvi": -1} for k in Metrics}
         n_thresholds = len(thresholds)
         print(f">>> Searching optimal NDVI threshold for {os.path.basename(naip_path)} ...")
 
@@ -114,14 +119,14 @@ class SmartNDVIController:
 
                 # My module
                 confusion_matrix = ConfusionMatrix()
-                # full_mask = FullMaskCreator(sample_shape[0], sample_shape[1])
-                random_mask = RandomSampledMaskCreator(height=sample_shape[0],
+                # mask_creator = FullMaskCreator(sample_shape[0], sample_shape[1])
+                mask_creator = RandomSampledMaskCreator(height=sample_shape[0],
                                                        width=sample_shape[1],
                                                        sample_size=1000,
                                                        seed=95279527)
                 confusion_matrix.compute_on_batch_samples(ground_truth_mask_dir,
                                                           naip_sample_mask_dir,
-                                                          random_mask)
+                                                          mask_creator)
                 cm = confusion_matrix.get_confusion_matrix()
 
                 opt_data_array[i, 0] = thresholds[i]
@@ -141,7 +146,7 @@ class SmartNDVIController:
             outfile.write(json.dumps(optimal_ndvi, indent=4))
 
         opt_curve_data_path = os.path.join(output_optimal_ndvi_dir,
-                                           "opt_curve_data.csv")
+                                           f"{os.path.basename(naip_path)}_opt_curve_data.csv")
         df = pd.DataFrame(opt_data_array, columns=["ndvi_threshold", Metrics(0).name, Metrics(1).name])
         df.to_csv(opt_curve_data_path, index=False)
 
@@ -216,6 +221,13 @@ class SmartNDVIController:
                                              output_mask_dir: str,
                                              output_image_dir: str,
                                              output_landcover_dir: str):
+        if not os.path.exists(output_mask_dir):
+            util.create_directory(output_mask_dir)
+        if not os.path.exists(output_image_dir):
+            util.create_directory(output_image_dir)
+        if not os.path.exists(output_landcover_dir):
+            util.create_directory(output_landcover_dir)
+
         util.remove_all_files(output_mask_dir)
         util.remove_all_files(output_image_dir)
         util.remove_all_files(output_landcover_dir)
