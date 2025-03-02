@@ -32,7 +32,7 @@ class NAIPImagery:
         """
         self._naip_img = new_naip_img
 
-    def get_center(self) -> tuple[int, int]:
+    def get_center(self) -> Tuple[int, int]:
         """
         Get the center coordinates of the NAIP imagery.
         :return: tuple of int, (center_y, center_x).
@@ -50,7 +50,7 @@ class NAIPImagery:
         _, height, width = self.naip_img.shape
         return self._naip_img.rio.reproject(dst_crs, shape=(height, width))
 
-    def get_lon_lat(self, row: int = 0, col: int = 0) -> tuple[int, int]:
+    def get_lon_lat(self, row: int = 0, col: int = 0) -> Tuple[int, int]:
         """
         Get the longitude and latitude of the pixel [row, col] of the NAIP image.
         :param row: int, row index of the target pixel
@@ -60,7 +60,7 @@ class NAIPImagery:
         naip_ll = self.reproject("EPSG:4326")
         return naip_ll[0, row, col].x.values.item(), naip_ll[0, row, col].y.values.item()
 
-    def get_center_lon_lat(self, top_left: tuple[int, int], bottom_right: tuple[int, int]) -> tuple[int, int]:
+    def get_center_lon_lat(self, top_left: Tuple[int, int], bottom_right: Tuple[int, int]) -> Tuple[int, int]:
         """
         Get the longitude and latitude of the center pixel of a rectangular
         block specified by top_left and bottom_right.
@@ -74,7 +74,7 @@ class NAIPImagery:
         center_row, center_col = naip_roi.get_center()
         return naip_roi.get_lon_lat(row=center_row, col=center_col)
 
-    def get_resolution(self) -> tuple[int, int]:
+    def get_resolution(self) -> Tuple[int, int]:
         """
         Get the resolution of the NAIP image in meters/pixel.
         :return: tuple of int, resolution of the NAIP image along x- and y-axis.
@@ -121,8 +121,8 @@ class NAIPImagery:
         return (naip_data[3] - naip_data[0]) / (naip_data[3] + naip_data[0])
 
     def set_mask_color(self, mask_binary: np.ndarray,
-                       pos_colors: tuple[int, int, int] = (0, 0, 255),
-                       neg_colors: tuple[int, int, int] = (0, 0, 0)):
+                       pos_colors: Tuple[int, int, int] = (0, 0, 255),
+                       neg_colors: Tuple[int, int, int] = (0, 0, 0)):
         """
         Apply a color specified by colors (B,G,R) to the NDVI mask (binary-classified)
         and return the colored mask.
@@ -143,7 +143,7 @@ class NAIPImagery:
         return ((mask_binary.astype(np.int32) - 1) * (-1)).astype(np.uint8)
 
     @staticmethod
-    def _set_category_color(mask_binary, colors: tuple[int, int, int]):
+    def _set_category_color(mask_binary, colors: Tuple[int, int, int]):
         res = np.tile(mask_binary, (3, 1, 1)).transpose(1, 2, 0)
         res[:, :, 0] *= colors[0]
         res[:, :, 1] *= colors[1]
@@ -153,8 +153,7 @@ class NAIPImagery:
     def generate_vegetation_cover_map(self,
                                       mask_binary: np.ndarray,
                                       pos_colors: Tuple[int, int, int] = (0, 0, 255),
-                                      neg_colors: Tuple[int, int, int] = (0, 0, 0)
-                                      ) -> np.ndarray:
+                                      neg_colors: Tuple[int, int, int] = (0, 0, 0)) -> np.ndarray:
         # mask_gray = self.generate_vegetation_mask(ndvi_threshold, invert)
         mask_bgr = self.set_mask_color(mask_binary, pos_colors, neg_colors)
         return cv2.addWeighted(self.get_bgr_naip(), 1, mask_bgr, 0.25, 0)
