@@ -97,7 +97,7 @@ class SmartNDVIController:
         n_thresholds = len(thresholds)
         print(f">>> Searching optimal NDVI threshold for {os.path.basename(naip_path)} ...")
 
-        opt_data_array = np.zeros((n_thresholds, len(Metrics) + 1), dtype=np.float64)
+        # opt_data_array = np.zeros((n_thresholds, len(Metrics) + 1), dtype=np.float64)
         with progressbar.ProgressBar(max_value=n_thresholds) as bar:
             for i in range(n_thresholds):
                 util.remove_all_files(naip_sample_mask_dir)
@@ -124,9 +124,9 @@ class SmartNDVIController:
                                                           random_mask)
                 cm = confusion_matrix.get_confusion_matrix()
 
-                opt_data_array[i, 0] = thresholds[i]
+                # opt_data_array[i, 0] = thresholds[i]
                 for metrics in Metrics:
-                    opt_data_array[i, metrics.value + 1] = cm[metrics.name]
+                    # opt_data_array[i, metrics.value + 1] = cm[metrics.name]
                     if cm[metrics.name] > max_metrics_value[metrics.name]:
                         # Update maximum metrics value
                         max_metrics_value[metrics.name] = cm[metrics.name]
@@ -135,15 +135,19 @@ class SmartNDVIController:
                         optimal_ndvi[metrics.name]["metrics"] = cm[metrics.name]
                         optimal_ndvi[metrics.name]["optimal_ndvi"] = thresholds[i]
                 bar.update(i)
+
+                for metrics in Metrics:
+                    if max_metrics_value[metrics.name] == 1.0:
+                        break
+
         output_optimal_ndvi_path = os.path.join(output_optimal_ndvi_dir,
                                                 f"{os.path.basename(naip_path)}_optimal_ndvi.json")
         with open(output_optimal_ndvi_path, "w") as outfile:
             outfile.write(json.dumps(optimal_ndvi, indent=4))
 
-        opt_curve_data_path = os.path.join(output_optimal_ndvi_dir,
-                                           "opt_curve_data.csv")
-        df = pd.DataFrame(opt_data_array, columns=["ndvi_threshold", Metrics(0).name, Metrics(1).name])
-        df.to_csv(opt_curve_data_path, index=False)
+        # opt_curve_data_path = os.path.join(output_optimal_ndvi_dir, "opt_curve_data.csv")
+        # df = pd.DataFrame(opt_data_array, columns=["ndvi_threshold", Metrics(0).name, Metrics(1).name])
+        # df.to_csv(opt_curve_data_path, index=False)
 
         if land_cover_metrics is not None:
             try:
@@ -244,16 +248,16 @@ class SmartNDVIController:
                 _, ground_truth_gray = cv2.threshold(ground_truth_segs[0], 0, 255, cv2.THRESH_BINARY)
                 ground_truth_gray = ground_truth_gray.astype(np.uint8)
 
-                ground_truth_binary = ground_truth_segs[0].astype(np.uint8)
-                ground_truth_land_cover = naip_sample.generate_vegetation_cover_map(ground_truth_binary)
-                out_landcover_path = os.path.join(output_landcover_dir, f"ground_truth_landcover_{str(i + 1).zfill(n_digits)}.png")
-                cv2.imwrite(out_landcover_path, ground_truth_land_cover)
+                # ground_truth_binary = ground_truth_segs[0].astype(np.uint8)
+                # ground_truth_land_cover = naip_sample.generate_vegetation_cover_map(ground_truth_binary)
+                # out_landcover_path = os.path.join(output_landcover_dir, f"ground_truth_landcover_{str(i + 1).zfill(n_digits)}.png")
+                # cv2.imwrite(out_landcover_path, ground_truth_land_cover)
 
                 out_mask_path = os.path.join(output_mask_dir, f"ground_truth_mask_{str(i + 1).zfill(n_digits)}.png")
                 cv2.imwrite(out_mask_path, ground_truth_gray)
 
-                out_image_path = os.path.join(output_image_dir, f"ground_truth_image_{str(i + 1).zfill(n_digits)}.png")
-                cv2.imwrite(out_image_path, naip_sample.get_bgr_naip())
+                # out_image_path = os.path.join(output_image_dir, f"ground_truth_image_{str(i + 1).zfill(n_digits)}.png")
+                # cv2.imwrite(out_image_path, naip_sample.get_bgr_naip())
 
                 bar.update(i)
 
@@ -296,6 +300,6 @@ class SmartNDVIController:
         # cv2.imwrite(os.path.join(vegetation_mask_output_dir, f"{filename_base}_vegetation_mask.tif"),
         #             vegetation_mask_integrated)
 
-        vegetation_cover = naip.generate_vegetation_cover_map(vegetation_mask_binary)
-        cv2.imwrite(os.path.join(land_cover_output_dir, f"{filename_base}_land_cover.png"),
-                    vegetation_cover)
+        # vegetation_cover = naip.generate_vegetation_cover_map(vegetation_mask_binary)
+        # cv2.imwrite(os.path.join(land_cover_output_dir, f"{filename_base}_land_cover.png"),
+        #             vegetation_cover)

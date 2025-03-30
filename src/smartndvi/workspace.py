@@ -68,7 +68,7 @@ class WorkSpace:
         """
         path_list = []
         try:
-            for path in self._toml.toml_document["General"]["Model"]:
+            for path in self._toml.toml_document["General"]["Model"].values():
                 path_list.append(path)
             # path_list.append(self._toml.toml_document["General"]["Model"]["config"])
             # path_list.append(self._toml.toml_document["General"]["Model"]["checkpoint"])
