@@ -19,8 +19,6 @@ from Inference.deep_recognizer import DeepGreenSpaceRecognizer
 from utility.image_block import ImageBlock
 from enum import Enum
 
-from vegetation_index.data_persistence import DataArray2D
-
 
 class Metrics(Enum):
     kappa = 0
@@ -90,10 +88,6 @@ class SmartNDVIController:
                                                      ground_truth_mask_dir,
                                                      ground_truth_image_dir,
                                                      ground_truth_landcover_dir)
-        # self._generate_ground_truth_by_hsv(naip_sample_coordinates,
-        #                                    naip_path,
-        #                                    ground_truth_mask_dir,
-        #                                    ground_truth_image_dir)
 
         # Initialize searching parameters
         thresholds = tuple(np.arange(0, 0.41, 0.02))
@@ -111,19 +105,12 @@ class SmartNDVIController:
                                                      naip_sample_mask_dir,
                                                      thresholds[i])
 
-                # cm = util.get_confusion_matrix_on_naip(naip_sample_mask_dir,
-                #                                        ground_truth_mask_dir)
-
-                # cm = util.get_confusion_matrix_with_random_sample(naip_sample_mask_dir,
-                #                                        ground_truth_mask_dir)
-
-                # My module
                 confusion_matrix = ConfusionMatrix()
-                # mask_creator = FullMaskCreator(sample_shape[0], sample_shape[1])
-                mask_creator = RandomSampledMaskCreator(height=sample_shape[0],
-                                                       width=sample_shape[1],
-                                                       sample_size=1000,
-                                                       seed=95279527)
+                mask_creator = FullMaskCreator(sample_shape[0], sample_shape[1])
+                # mask_creator = RandomSampledMaskCreator(height=sample_shape[0],
+                #                                        width=sample_shape[1],
+                #                                        sample_size=1000,
+                #                                        seed=95279527)
                 confusion_matrix.compute_on_batch_samples(ground_truth_mask_dir,
                                                           naip_sample_mask_dir,
                                                           mask_creator)
@@ -140,6 +127,11 @@ class SmartNDVIController:
                         optimal_ndvi[metrics.name]["metrics"] = cm[metrics.name]
                         optimal_ndvi[metrics.name]["optimal_ndvi"] = thresholds[i]
                 bar.update(i)
+
+                for metrics in Metrics:
+                    if max_metrics_value[metrics.name] == 1.0:
+                        break
+
         output_optimal_ndvi_path = os.path.join(output_optimal_ndvi_dir,
                                                 f"{os.path.basename(naip_path)}_optimal_ndvi.json")
         with open(output_optimal_ndvi_path, "w") as outfile:
@@ -200,7 +192,7 @@ class SmartNDVIController:
             for i in range(n_samples):
                 image_block = ImageBlock(naip_sample_xy[i])
                 tx, ty, bx, by = image_block.get_all_coordinates()
-                naip_sample = naip[:, ty:by + 1, tx:bx + 1]
+                naip_sample = naip[:, ty:by+1, tx:bx+1]
 
                 ground_truth_gray = naip_sample.get_vegetation_by_hsv(30, 90)
                 _, ground_truth_binary = cv2.threshold(ground_truth_gray, 0, 1, cv2.THRESH_BINARY)
@@ -246,7 +238,7 @@ class SmartNDVIController:
             for i in range(n_samples):
                 image_block = ImageBlock(naip_sample_xy[i])
                 tx, ty, bx, by = image_block.get_all_coordinates()
-                naip_sample = naip[:, ty:by + 1, tx:bx + 1]
+                naip_sample = naip[:, ty:by+1, tx:bx+1]
                 naip_sample_bgr_img = naip_sample.get_bgr_naip()
 
                 # Get inference from the DeepGreen model

@@ -60,7 +60,7 @@ class TrainDataGenerator:
                     for i, sample_coordinate in enumerate(sample_coordinates):
                         image_block = ImageBlock(sample_coordinate)
                         tx, ty, bx, by = image_block.get_all_coordinates()
-                        naip_sample = naip_obj[:, ty:by, tx:bx]
+                        naip_sample = naip_obj[:, ty:by+1, tx:bx+1]
                         out_image_path = os.path.join(sub_dir, f"{filename}_s{str(i + 1).zfill(n_digits)}{format}")
                         if format == ".png":
                             naip_sample_bgr = naip_sample.get_bgr_naip()
@@ -92,6 +92,7 @@ class NormalizationStatistics:
                     x += pixels
                     x_squared += np.square(pixels)
                     count += 1
+
         mean = np.mean(x / count, axis=(0, 1))
         mean_of_squared = np.mean(x_squared / count, axis=(0, 1))
         std = np.sqrt(mean_of_squared - np.square(mean))
