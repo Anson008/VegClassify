@@ -25,7 +25,7 @@ class TrainDataGenerator:
     def naip_dir(self, value: str | None):
         self._naip_dir = value
 
-    def generate_train_data(self, output_dir: str) -> None:
+    def generate_train_data(self, output_dir: str, format: str) -> None:
         """
         Generate training data from NAIP imagery and save the results to output_dir.
         :param output_dir: str, output directory of the training data.
@@ -58,13 +58,15 @@ class TrainDataGenerator:
                     util.create_directory(sub_dir)
 
                     for i, sample_coordinate in enumerate(sample_coordinates):
-                        # print(f"Processing sample {i + 1}")
                         image_block = ImageBlock(sample_coordinate)
                         tx, ty, bx, by = image_block.get_all_coordinates()
                         naip_sample = naip_obj[:, ty:by, tx:bx]
-                        naip_sample_bgr = naip_sample.get_bgr_naip()
-                        out_image_path = os.path.join(sub_dir, f"{filename}_s{str(i + 1).zfill(n_digits)}.png")
-                        cv2.imwrite(out_image_path, naip_sample_bgr)
+                        out_image_path = os.path.join(sub_dir, f"{filename}_s{str(i + 1).zfill(n_digits)}{format}")
+                        if format == ".png":
+                            naip_sample_bgr = naip_sample.get_bgr_naip()
+                            cv2.imwrite(out_image_path, naip_sample_bgr)
+                        elif format == ".tif":
+                            naip_sample.naip_img.rio.to_raster(out_image_path)
 
 
 class NormalizationStatistics:
@@ -97,14 +99,14 @@ class NormalizationStatistics:
 
 
 if __name__ == "__main__":
-    # naip_dir = "D:/NAIP/"
-    # output_dir = "D:/naip_split/"
-    # train_data_generator = TrainDataGenerator(naip_dir)
-    # train_data_generator.generate_train_data(output_dir)
+    naip_dir = "D:\\NAIP_Raw\\"
+    output_dir = "E:\\NAIP_Split_TIF\\"
+    train_data_generator = TrainDataGenerator(naip_dir)
+    train_data_generator.generate_train_data(output_dir, ".tif")
 
-    train_img_dir = "D:\\DeepGreenSpace_Train_Data\\Labeled\\Naip_National_Labeled_100_voc\\JPEGImages"
-    norm_statistics = NormalizationStatistics(train_img_dir)
-    res = norm_statistics.compute_mean_and_std(1024, 512)
-    print(res)
+    # train_img_dir = "D:\\DeepGreenSpace_Train_Data\\Labeled\\Naip_National_Labeled_100_voc\\JPEGImages"
+    # norm_statistics = NormalizationStatistics(train_img_dir)
+    # res = norm_statistics.compute_mean_and_std(1024, 512)
+    # print(res)
 
 

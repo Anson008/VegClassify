@@ -48,13 +48,12 @@ class ConfusionMatrix:
         Calculate Cohen's kappa of the confusion matrix
         :return: float or None. Kappa value if exists. Otherwise, None.
         """
-        try:
-            numerator = self._tp * self._tn - self._fp * self._fn
-            denominator = ((self._tp + self._fp) * (self._fp + self._tn) +
-                       (self._tp + self._fn) * (self._fn + self._tn))
-            return 2.0 * numerator / denominator
-        except ZeroDivisionError as err:
-            print(f"{err}: Failed to calculate kappa")
+        numerator = self._tp * self._tn - self._fp * self._fn
+        denominator = ((self._tp + self._fp) * (self._fp + self._tn) +
+                   (self._tp + self._fn) * (self._fn + self._tn))
+        if denominator == 0.0:
+            return 1.0
+        return 2.0 * numerator / denominator
 
     def get_accuracy(self) -> Optional[float]:
         """
@@ -65,6 +64,7 @@ class ConfusionMatrix:
             return 1.0 * (self._tp + self._tn) / (self._tp + self._fp + self._tn + self._fn)
         except ZeroDivisionError as err:
             print(f"{err}: Failed to calculate accuracy")
+            return -1
 
     def get_confusion_matrix(self):
         return {"tp": self._tp,
