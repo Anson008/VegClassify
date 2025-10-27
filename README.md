@@ -1,5 +1,21 @@
 # GreenSpaceRecognizer
 
+## Quick Start
+
+1. Initialize workspace
+~~~
+    python -m smartndvi init -wd <your-working-directory>
+~~~
+2. Process a single image
+~~~
+    python -m smartndvi optimize <input-image-directory> -lc <kappa | accuracy>
+~~~
+3. Check version
+~~~
+    python -m smartndvi --version
+~~~
+
+
 ## References
 
 ### Connected Components
