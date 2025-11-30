@@ -1,6 +1,11 @@
+import os
+
 import cv2
 import math
+import numpy as np
 from pathlib import Path
+
+from naip.naip_imagery import NAIPImagery
 from utility import util
 
 class ImageEditor:
@@ -32,8 +37,36 @@ class ImageEditor:
                 output_path = str(output_dir.joinpath(filename))
                 cv2.imwrite(output_path, split)
 
+    @staticmethod
+    def load_png(image_path: str):
+        mask = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE).astype(np.uint)
+        mask[mask != 0] = 255
+        return mask
+
+    @staticmethod
+    def load_raster(raster_path: str):
+        raster = util.read_naip_image(raster_path)
+        naip_obj = NAIPImagery(raster)
+        naip_img = naip_obj.get_bgr_naip()
+        naip_img = cv2.cvtColor(naip_img, cv2.COLOR_BGR2GRAY).astype(np.uint)
+        naip_img[naip_img != 0] = 255
+        return naip_img
+
+    @staticmethod
+    def export_grayscale_raster(raster_dir: Path, output_dir: Path):
+        with os.scandir(raster_dir) as entries:
+            for entry in entries:
+                if entry.is_file() and entry.name.endswith(".tif"):
+                    gray_raster = ImageEditor.load_raster(entry.path)
+                    output_path = output_dir.joinpath(entry.name[:-4] + ".png")
+                    cv2.imwrite(str(output_path), gray_raster)
+
 
 if __name__ == "__main__":
-    image_path = Path("D:\\naip_playground2\\output\\land_cover_maps\\m_3510651_se_13_060_20220526.tif_land_cover.png")
-    des_path = Path("D:\\NDVI_Results_Analysis\\Land_cover_maps_split")
-    ImageEditor.split_image(image_path, des_path)
+    # image_path = Path("D:\\naip_playground2\\output\\land_cover_maps\\m_3510651_se_13_060_20220526.tif_land_cover.png")
+    # des_path = Path("D:\\NDVI_Results_Analysis\\Land_cover_maps_split")
+    # ImageEditor.split_image(image_path, des_path)
+
+    raster_dir = Path("D:\\Accuracy_Assessment\\vegetation_mask")
+    output_dir = Path("D:\\Accuracy_Assessment\\grayscale_vegetation_mask")
+    ImageEditor.export_grayscale_raster(raster_dir, output_dir)

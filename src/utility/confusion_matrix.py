@@ -11,6 +11,12 @@ class ConfusionMatrix:
         self._tn = 0
         self._fn = 0
 
+    def reset(self):
+        self._tp = 0
+        self._fp = 0
+        self._tn = 0
+        self._fn = 0
+
     @property
     def tp(self):
         return self._tp
@@ -58,12 +64,35 @@ class ConfusionMatrix:
     def get_accuracy(self) -> Optional[float]:
         """
         Calculate accuracy of the confusion matrix
-        :return: float or None. Accuracy value if exists. Otherwise, None
+        :return: float or None. Accuracy value if exists. Otherwise, returns -1
         """
         try:
             return 1.0 * (self._tp + self._tn) / (self._tp + self._fp + self._tn + self._fn)
         except ZeroDivisionError as err:
             print(f"{err}: Failed to calculate accuracy")
+            return -1
+
+    def get_precision(self) -> Optional[float]:
+        try:
+            return 1.0 * self._tp / (self._tp + self._fp)
+        except ZeroDivisionError as err:
+            print(f"{err}: Failed to calculate precision")
+            return -1
+
+    def get_recall(self) -> Optional[float]:
+        try:
+            return 1.0 * self._tp / (self._tp + self._fn)
+        except ZeroDivisionError as err:
+            print(f"{err}: Failed to calculate recall")
+            return -1
+
+    def get_f1score(self) -> Optional[float]:
+        try:
+            precision = self.get_precision()
+            recall = self.get_recall()
+            return 2 * precision * recall / (precision + recall)
+        except ZeroDivisionError as err:
+            print(f"{err}: Failed to calculate F1 score")
             return -1
 
     def get_confusion_matrix(self):
@@ -72,6 +101,9 @@ class ConfusionMatrix:
                 "tn": self._tn,
                 "fn": self._fn,
                 "accuracy": self.get_accuracy(),
+                "precision": self.get_precision(),
+                "recall": self.get_recall(),
+                "f1score": self.get_f1score(),
                 "kappa": self.get_kappa()}
 
     def compute_on_single_sample(self,
