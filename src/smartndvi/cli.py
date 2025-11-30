@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 import typer
 from pathlib import Path
 from smartndvi import __app_name__, __version__, ERRORS, config, smartndvi_controller, SUCCESS

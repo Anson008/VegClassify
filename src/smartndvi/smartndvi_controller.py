@@ -7,7 +7,7 @@ import json
 
 from pathlib import Path
 from typing import Tuple, Dict, NamedTuple, Any, Optional
-
+ 
 from utility.confusion_matrix import ConfusionMatrix
 from utility.mask_factory import FullMaskCreator, RandomSampledMask, RandomSampledMaskCreator
 from utility.toml import TOML
@@ -97,15 +97,16 @@ class SmartNDVIController:
         print(f">>> Searching optimal NDVI threshold for {os.path.basename(naip_path)} ...")
 
         opt_data_array = np.zeros((n_thresholds, len(Metrics) + 1), dtype=np.float64)
+        confusion_matrix = ConfusionMatrix()
         with progressbar.ProgressBar(max_value=n_thresholds) as bar:
             for i in range(n_thresholds):
                 util.remove_all_files(naip_sample_mask_dir)
+                confusion_matrix.reset()
                 self._generate_naip_vegetation_masks(naip_path,
                                                      sample_coordinate_file_path,
                                                      naip_sample_mask_dir,
                                                      thresholds[i])
 
-                confusion_matrix = ConfusionMatrix()
                 mask_creator = FullMaskCreator(sample_shape[0], sample_shape[1])
                 # mask_creator = RandomSampledMaskCreator(height=sample_shape[0],
                 #                                        width=sample_shape[1],

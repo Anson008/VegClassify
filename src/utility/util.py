@@ -4,7 +4,6 @@ import os
 import cv2
 import numpy as np
 import rioxarray as rxr
-# import constants as const
 from utility.confusion_matrix import ConfusionMatrix
 from sklearn.metrics import confusion_matrix
 

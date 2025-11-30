@@ -2,7 +2,6 @@ import cv2
 import os
 import shutil
 from pathlib import Path
-
 import utility.util
 
 
