@@ -8,7 +8,7 @@ from utility import util
 from pathlib import Path
 
 class RandomForestRecognizer:
-    def __init__(self, n_estimators=100, max_depth=20, n_jobs=-1):
+    def __init__(self, n_estimators : int=100, max_depth : Optional[int]=20, n_jobs=-1):
         self.__n_estimators = n_estimators
         self.__max_depth = max_depth
         self.__n_jobs = n_jobs
@@ -56,7 +56,9 @@ class RandomForestRecognizer:
         x_list = []
         with os.scandir(image_path) as entries:
             for entry in entries:
-                if entry.is_file() and entry.name.endswith(".jpg") and self.__is_in_train_index(entry.name):
+                if (entry.is_file() and
+                    entry.name.endswith(".jpg") and
+                    self.__is_in_index_set(entry.name, self.__train_index)):
                     print(f">>> Building feature for {entry.name}")
                     image = cv2.imread(entry.path)
                     feats = RandomForestRecognizer.extract_pixel_features(image)
@@ -101,7 +103,8 @@ class RandomForestRecognizer:
         clf.fit(self.__x, self.__y)
 
         if model_output_dir:
-            file_name = f"random_forest_estimators{self.__n_estimators}_depth{self.__max_depth}.joblib"
+            max_depth = self.__max_depth if self.__max_depth else -1
+            file_name = f"random_forest_estimators{self.__n_estimators}_depth{max_depth}.joblib"
             full_path = os.path.join(model_output_dir, file_name)
             joblib.dump(clf, full_path)
 
@@ -133,12 +136,12 @@ class RandomForestRecognizer:
 
 
 if __name__ == "__main__":
-    # split_file_path = "D:\\DeepGreenSpace_Train_Data\\Naip_National_Labeled_200_voc\\splits\\train.txt"
-    # image_path = "D:\\DeepGreenSpace_Train_Data\\Naip_National_Labeled_200_voc\\images"
-    # label_path = "D:\\DeepGreenSpace_Train_Data\\Naip_National_Labeled_200_voc\\labels"
-    # feature_output_path = "D:\\RandomForestNDVI\\feature.npy"
-    # label_output_path = "D:\\RandomForestNDVI\\label.npy"
-    # model_output_dir = "D:\\RandomForestNDVI\\model_zoo"
+    split_file_path = "D:\\DeepGreenSpace_Train_Data\\Naip_National_Labeled_200_voc\\splits\\train.txt"
+    image_path = "D:\\DeepGreenSpace_Train_Data\\Naip_National_Labeled_200_voc\\images"
+    label_path = "D:\\DeepGreenSpace_Train_Data\\Naip_National_Labeled_200_voc\\labels"
+    feature_output_path = "D:\\RandomForestNDVI\\feature.npy"
+    label_output_path = "D:\\RandomForestNDVI\\label.npy"
+    model_output_dir = "D:\\RandomForestNDVI\\model_zoo"
 
     # Build training data
     # rf_classifier = RandomForestRecognizer()
@@ -147,11 +150,11 @@ if __name__ == "__main__":
     # rf_classifier.build_label(label_path, label_output_path)
 
     # Train
-    # rf_classifier = RandomForestRecognizer()
-    # rf_classifier.get_dataset_from_file(feature_output_path, label_output_path)
-    # print("Training...")
-    # rf_classifier.fit(model_output_dir)
-    # print("Done!")
+    rf_classifier = RandomForestRecognizer(n_estimators=400, max_depth=None)
+    rf_classifier.get_dataset_from_file(feature_output_path, label_output_path)
+    print("Training...")
+    rf_classifier.fit(model_output_dir)
+    print("Done!")
 
     # Predict
     # test_index_file_path = "D:\\DeepGreenSpace_Train_Data\\Naip_National_Labeled_200_voc\\splits\\test.txt"
@@ -171,12 +174,12 @@ if __name__ == "__main__":
     # np.save(test_output_path, mask_pred)
 
     # Batch predict
-    test_index_file_path = "D:\\DeepGreenSpace_Train_Data\\Naip_National_Labeled_200_voc\\splits\\test.txt"
-    test_image_path = "D:\\DeepGreenSpace_Train_Data\\Naip_National_Labeled_200_voc\\images"
-    model_path = "D:\\RandomForestNDVI\\model_zoo\\random_forest_estimators100_depth20.joblib"
-    test_output_path = "D:\\RandomForestNDVI\\prediction\\rf_estimators100_depth20"
-
-    model = joblib.load(model_path)
-    rf_classifier = RandomForestRecognizer()
-    rf_classifier.build_test_index(test_index_file_path)
-    rf_classifier.batch_predict(model, test_image_path, test_output_path)
+    # test_index_file_path = "D:\\DeepGreenSpace_Train_Data\\Naip_National_Labeled_200_voc\\splits\\test.txt"
+    # test_image_path = "D:\\DeepGreenSpace_Train_Data\\Naip_National_Labeled_200_voc\\images"
+    # model_path = "D:\\RandomForestNDVI\\model_zoo\\random_forest_estimators100_depth20.joblib"
+    # test_output_path = "D:\\RandomForestNDVI\\prediction\\rf_estimators100_depth20"
+    #
+    # model = joblib.load(model_path)
+    # rf_classifier = RandomForestRecognizer()
+    # rf_classifier.build_test_index(test_index_file_path)
+    # rf_classifier.batch_predict(model, test_image_path, test_output_path)
