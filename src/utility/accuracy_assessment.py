@@ -120,13 +120,13 @@ if __name__ == "__main__":
 
     # Rename Random Forest prediction
     # filename_path = Path("D:\\Accuracy_Assessment\\JPGTONAIP_TestData.txt")
-    # destination_dir = Path("D:\\Accuracy_Assessment\\RandomForest_Prediction_Results")
-    # source_dir = Path("D:\\RandomForestNDVI\\prediction\\rf_estimators100_depth20")
+    # destination_dir = Path("D:\\Accuracy_Assessment\\RandomForest_Prediction_Results_estimators400")
+    # source_dir = Path("D:\\RandomForestNDVI\\prediction\\rf_estimators400_depth20")
     # copy_test_annotation(filename_path, destination_dir, source_dir)
 
     # Random Forest
     name_map_path = Path("D:\\Accuracy_Assessment\\JPGTONAIP_TestData.txt")
     annotation_dir = Path("D:\\Accuracy_Assessment\\Manually_Annotated_Data")
-    rf_classification_dir = Path("D:\\Accuracy_Assessment\\RandomForest_Prediction_Results")
-    output_path = Path("D:\\Accuracy_Assessment\\random_forest_accuracy_output.csv")
+    rf_classification_dir = Path("D:\\Accuracy_Assessment\\RandomForest_Prediction_Results_estimators400")
+    output_path = Path("D:\\Accuracy_Assessment\\random_forest_accuracy_output_estimators400.csv")
     get_accuracy_for_learning_models(name_map_path, annotation_dir, rf_classification_dir, output_path)
