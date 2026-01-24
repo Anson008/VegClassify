@@ -1,5 +1,4 @@
 from pathlib import Path
-
 from smartndvi import DIR_ERROR, SUCCESS
 from utility.toml import TOML
 from typing import List

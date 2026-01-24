@@ -4,10 +4,8 @@ import pandas as pd
 import progressbar
 import cv2
 import json
-
 from pathlib import Path
 from typing import Tuple, Dict, NamedTuple, Any, Optional
- 
 from utility.confusion_matrix import ConfusionMatrix
 from utility.mask_factory import FullMaskCreator, RandomSampledMask, RandomSampledMaskCreator
 from utility.toml import TOML

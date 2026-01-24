@@ -1,10 +1,7 @@
 import os
-
 import cv2
-import math
 import numpy as np
 from pathlib import Path
-
 from naip.naip_imagery import NAIPImagery
 from utility import util
 
