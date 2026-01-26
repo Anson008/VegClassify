@@ -97,17 +97,3 @@ class NormalizationStatistics:
         mean_of_squared = np.mean(x_squared / count, axis=(0, 1))
         std = np.sqrt(mean_of_squared - np.square(mean))
         return {"mean": tuple(mean), 'std': tuple(std)}
-
-
-if __name__ == "__main__":
-    naip_dir = "D:\\NAIP_Raw\\"
-    output_dir = "E:\\NAIP_Split_TIF\\"
-    train_data_generator = TrainDataGenerator(naip_dir)
-    train_data_generator.generate_train_data(output_dir, ".tif")
-
-    # train_img_dir = "D:\\DeepGreenSpace_Train_Data\\Labeled\\Naip_National_Labeled_100_voc\\JPEGImages"
-    # norm_statistics = NormalizationStatistics(train_img_dir)
-    # res = norm_statistics.compute_mean_and_std(1024, 512)
-    # print(res)
-
-

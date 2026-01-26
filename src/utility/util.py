@@ -197,7 +197,6 @@ def get_image_center(top_left, bottom_right):
 def draw_template_match_region(wayback_shot_path, tm_info_path):
     wayback_shot_file_obj = os.scandir(wayback_shot_path)
     tm_info = np.load(tm_info_path)
-    # print(f"tm_info shape: {tm_info.shape}")
     tm_info = tm_info.tolist()
 
     for i, item in enumerate(zip(tm_info, wayback_shot_file_obj)):
@@ -205,7 +204,6 @@ def draw_template_match_region(wayback_shot_path, tm_info_path):
         filename = wayback_shot_file.name
         if filename.endswith(".png"):
             wayback_img = cv2.imread(os.path.join(wayback_shot_path, filename))
-            # print(tm_param)
             _, ox, oy, h, w = tm_param
             cv2.rectangle(wayback_img, (int(ox), int(oy)), (int(ox + w), int(oy + h)), (0, 255, 255), 3)
             out_filename = f"template_match_region_{i + 1}.png"
@@ -223,24 +221,6 @@ def get_confusion_matrix_on_naip(naip_mask_path, ground_truth_mask_path):
                                    cv2.IMREAD_GRAYSCALE).flatten()
         gt_mask_img = cv2.imread(os.path.join(ground_truth_mask_path, gt_mask.name),
                                  cv2.IMREAD_GRAYSCALE).flatten()
-        # print(f"NAIP: {naip_mask_img.shape}, {naip_mask_img.dtype}, {naip_mask_img.min()}, {naip_mask_img.max()}")
-        # print(f"GT: {gt_mask_img.shape}, {gt_mask_img.dtype}, {gt_mask_img.min()}, {gt_mask_img.max()}")
-
-        # # Accumulate TP and TN
-        # tp_matrix = np.logical_and(gt_mask_img, naip_mask_img)
-        # n_tp = int(np.sum(tp_matrix))
-        # cm_obj.tp += n_tp
-        #
-        # tn_matrix = np.logical_and(np.logical_not(gt_mask_img), np.logical_not(naip_mask_img))
-        # n_tn = int(np.sum(tn_matrix))
-        # cm_obj.tn += n_tn
-        #
-        # # Accumulate FP and FN
-        # n_fp = int(np.sum(naip_mask_img) / 255 - n_tp)
-        # cm_obj.fp += n_fp
-        #
-        # n_fn = tp_matrix.size - n_tp - n_tn - n_fp
-        # cm_obj.fn += n_fn
 
         cm = confusion_matrix(gt_mask_img, naip_mask_img)
         tn, fp, fn, tp = cm.ravel()
@@ -266,30 +246,9 @@ def get_confusion_matrix_with_random_sample(naip_mask_path, ground_truth_mask_pa
                                    cv2.IMREAD_GRAYSCALE).flatten()
         random_idx = rng.choice(index_array, 100, replace=False)
 
-        # random_idx = np.unravel_index(random_idx, naip_mask_img.shape)
-        # naip_mask_sample = naip_mask_img[random_idx[0], random_idx[1]]
-        # gt_mask_sample = gt_mask_img[random_idx[0], random_idx[1]]
-
         # sk-learn cm
         naip_mask_sample = naip_mask_img[random_idx]
         gt_mask_sample = gt_mask_img[random_idx]
-
-        # # Accumulate TP and TN
-        # tp_matrix = np.logical_and(gt_mask_sample, naip_mask_sample)
-        # n_tp = int(np.sum(tp_matrix))
-        # cm_obj.tp += n_tp
-        #
-        # tn_matrix = np.logical_and(np.logical_not(gt_mask_sample), np.logical_not(naip_mask_sample))
-        # n_tn = int(np.sum(tn_matrix))
-        # cm_obj.tn += n_tn
-        #
-        # # Accumulate FP and FN
-        # n_fp = int(np.sum(naip_mask_sample) / 255 - n_tp)
-        # cm_obj.fp += n_fp
-        #
-        # n_fn = tp_matrix.size - n_tp - n_tn - n_fp
-        # cm_obj.fn += n_fn
-
 
         cm = confusion_matrix(gt_mask_sample, naip_mask_sample)
         tn, fp, fn, tp = cm.ravel()
@@ -301,57 +260,8 @@ def get_confusion_matrix_with_random_sample(naip_mask_path, ground_truth_mask_pa
     return cm_obj.get_confusion_matrix()
 
 
-# def get_confusion_matrix(naip_mask_path, ground_truth_mask_path, tm_info_path):
-#     naip_file_obj = os.scandir(naip_mask_path)
-#     gt_file_obj = os.scandir(ground_truth_mask_path)
-#     tm_info = np.load(tm_info_path).tolist()
-#
-#     cm = {"tp": 0, "fp": 0, "tn": 0, "fn": 0, "kappa": 0}
-#     tp, fp, tn, fn, kappa = 0, 0, 0, 0, 0
-#
-#     for naip_mask, gt_mask, tm_i in zip(naip_file_obj, gt_file_obj, tm_info):
-#         scale, ox, oy, ndvi_h, ndvi_w = tm_i
-#         ox = int(ox)
-#         oy = int(oy)
-#         ndvi_h = int(ndvi_h)
-#         ndvi_w = int(ndvi_w)
-#
-#         naip_mask_img = cv2.imread(os.path.join(naip_mask_path, naip_mask.name))
-#         gt_mask_img = cv2.imread(os.path.join(ground_truth_mask_path, gt_mask.name))
-#
-#         gt_matched_mask = gt_mask_img[oy:oy + ndvi_h, ox:ox + ndvi_w]
-#         naip_matched_mask = cv2.resize(naip_mask_img,
-#                                        dsize=(0, 0),
-#                                        fx=scale,
-#                                        fy=scale,
-#                                        interpolation=cv2.INTER_CUBIC)
-#
-#         # Accumulate TP and TN
-#         gt_and_naip = np.logical_and(gt_matched_mask, naip_matched_mask)
-#         n_tp = np.sum(gt_and_naip).astype(np.int64)
-#         tp += n_tp
-#         tn += gt_and_naip.size - n_tp
-#
-#         # Accumulate FP and FN
-#         fp += np.sum(np.logical_and(np.logical_not(gt_matched_mask), naip_matched_mask)).astype(np.int64)
-#         fn += np.sum(np.logical_and(gt_matched_mask, np.logical_not(naip_matched_mask))).astype(np.int64)
-#
-#     kappa = 2.0 * (tp * tn - fp * fn) / ((tp + fp) * (fp + tn) + (tp + fn) * (fn + tn))
-#     accuracy = 1.0 * (tp + tn) / (tp + fp + tn + fn)
-#
-#     cm["tp"] = int(tp)
-#     cm["fp"] = int(fp)
-#     cm["tn"] = int(tn)
-#     cm["fn"] = int(fn)
-#     cm["kappa"] = float(kappa)
-#     cm["accuracy"] = float(accuracy)
-#
-#     return cm
-
-
 def load_npy_file(file_path):
     try:
         return np.load(file_path)
     except OSError or ValueError or EOFError as err:
         print(err)
-

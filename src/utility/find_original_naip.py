@@ -41,28 +41,3 @@ def copy_test_data(filename_dir: Path, destination_dir: Path, source_dir: Path):
                         if source_dir_entry.is_dir() and source_dir_entry.name[:-6] == dir_name:
                             copy_source = os.path.join(source_dir_entry, filename_entry.name)
                             shutil.copy(copy_source, destination_dir)
-
-
-if __name__ == "__main__":
-    # target_dir = "D:\\DeepGreenSpace_Train_Data\\Labeled\\Naip_National_Labeled_200_voc\\JPEGImages\\"
-    # target_file_name = "green_space_train_000.jpg"
-    # target_path = Path(os.path.join(target_dir, target_file_name))
-    #
-    # original_naip_dir_root = "D:\\naip_split\\"
-    # original_naip_dir_sub = "m_2808112_sw_17_030_20230112_split"
-    # original_naip_dir_full = Path(os.path.join(original_naip_dir_root, original_naip_dir_sub))
-    #
-    # outpath = Path("D:\\NDVI_Results_Analysis\\JPGTONAIP.txt")
-    #
-    # find_original_naip(target_path, original_naip_dir_full, outpath)
-
-    # Find original NAIP using PNG
-    # target_dir = Path("D:\\DeepGreenSpace_Train_Data\\Labeled\\Naip_National_Labeled_200_voc\\JPEGImages\\")
-    # original_naip_dir_root = Path("D:\\naip_split\\")
-    # output_path = Path("D:\\NDVI_Results_Analysis\\JPGTONAIP.txt")
-    # find_all_original_naip(target_dir, original_naip_dir_root, output_path)
-
-    filename_dir = Path("D:\\Test_Data_TIF_Archive")
-    destination_dir = Path("D:\\Test_Data_TIF")
-    source_dir = Path("E:\\NAIP_Split_TIF")
-    copy_test_data(filename_dir, destination_dir, source_dir)

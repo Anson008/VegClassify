@@ -150,4 +150,3 @@ class ConfusionMatrix:
             predicted_full_path = os.path.join(predicted_mask_path, predicted_mask_obj.name)
             actual_mask, predicted_mask = mask_creator.create(actual_full_path, predicted_full_path)
             self.compute_on_single_sample(actual_mask, predicted_mask)
-

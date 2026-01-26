@@ -266,29 +266,3 @@ class NAIPImagery:
                 optimal_metrics = (scale, max_val, max_loc, ndvi_best.shape[0], ndvi_best.shape[1])
 
         return optimal_metrics
-
-
-if __name__ == "__main__":
-    img_path = "../../image/m_4111118_nw_12_060_20210813.tif"
-
-
-    naip_img = util.read_naip_image(img_path)
-    naip = NAIPImagery(naip_img)
-    print(naip.naip_img)
-    # print(type(naip.naip_img.values))
-
-
-    vegetation_mask = naip.generate_vegetation_mask(0.14)
-    # vegetation_mask_bgr = naip.set_mask_color(vegetation_mask,
-    #                                               pos_colors=(84, 163, 49),
-    #                                               neg_colors=(185, 252, 247))
-    vegetation_mask_integrated = naip.integrate_vegetation_mask(vegetation_mask)
-    vegetation_mask_integrated.rio.to_raster("../../results/test_binary_mask_with_spatial.tif")
-    # cv2.imwrite("../../results/test_bgr_mask1.png", vegetation_mask_bgr)
-    # land_cover_map = naip.generate_vegetation_cover_map(vegetation_mask)
-    # cv2.imwrite("../../results/test_land_cover1-5.png", land_cover_map)
-
-
-
-
-

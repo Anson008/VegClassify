@@ -56,13 +56,3 @@ class ImageBlock:
         """
         x, y = self.get_relative_center()
         return x + self.top_left_x, y + self.top_left_y
-
-
-if __name__ == "__main__":
-    # diagonal_xy = np.array([[1, 2, 2, 1], [2, 3, 3, 2], [3, 4, 4, 3], [4, 5, 5, 5]])
-    # for x in diagonal_xy:
-    #     print(x.shape)
-
-    a2 = np.array([1, 2, 3, 4])
-    block = ImageBlock(a2)
-    print(type(block.top_left_y), block.top_left_y)

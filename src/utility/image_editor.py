@@ -57,13 +57,3 @@ class ImageEditor:
                     gray_raster = ImageEditor.load_raster(entry.path)
                     output_path = output_dir.joinpath(entry.name[:-4] + ".png")
                     cv2.imwrite(str(output_path), gray_raster)
-
-
-if __name__ == "__main__":
-    # image_path = Path("D:\\naip_playground2\\output\\land_cover_maps\\m_3510651_se_13_060_20220526.tif_land_cover.png")
-    # des_path = Path("D:\\NDVI_Results_Analysis\\Land_cover_maps_split")
-    # ImageEditor.split_image(image_path, des_path)
-
-    raster_dir = Path("D:\\Accuracy_Assessment\\vegetation_mask")
-    output_dir = Path("D:\\Accuracy_Assessment\\grayscale_vegetation_mask")
-    ImageEditor.export_grayscale_raster(raster_dir, output_dir)

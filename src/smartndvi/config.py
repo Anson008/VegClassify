@@ -81,7 +81,3 @@ def _create_output_directory(out_path: str) -> int:
     except OSError:
         return DB_WRITE_ERROR
     return SUCCESS
-
-
-if __name__ == "__main__":
-    print(CONFIG_FILE_PATH)
