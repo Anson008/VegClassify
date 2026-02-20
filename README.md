@@ -1,4 +1,53 @@
-# GreenSpaceRecognizer
+# VegClassify
+
+A geospatial analysis tool that automatically determines the optimal NDVI threshold for vegetation classification in 
+NAIP imagery using a deep learning–based reference model.
+
+The system leverages a trained deep learning model to generate pixel-wise vegetation classifications from RGB imagery. 
+These predictions are treated as pseudo–ground truth and are used to compute the NDVI threshold that best aligns 
+traditional index-based classification with model-based semantic segmentation.
+
+## Overview
+
+Vegetation classification is commonly performed using the Normalized Difference Vegetation Index (NDVI). 
+However, selecting an appropriate NDVI threshold is often heuristic and scene-dependent.
+
+This tool automates threshold selection by:
+
+1. Running a deep learning model on NAIP RGB imagery to produce vegetation masks. 
+2. Computing NDVI for the same imagery. 
+3. Sweeping candidate NDVI thresholds. 
+4. Comparing NDVI-based classifications with the deep learning output. 
+5. Selecting the threshold that maximizes agreement between the two methods.
+
+The result is a data-driven NDVI threshold optimized for the specific scene.
+
+## Features
+1. Automatic NDVI threshold selection 
+2. GPU-accelerated deep learning inference 
+3. Scene-specific optimization 
+4. Pixel-level evaluation
+
+## Installation
+```commandline
+git clone https://github.com/Anson008/VegClassify.git
+cd VegClassify
+conda env create -f vegclassify_environment.yaml
+```
+## Usage
+
+## Example Output
+
+## How to cite
+
+Huaqing Wang, Xingchen Zhao, Simin Gholami, Christopher McGinty, Brent Chamberlain, Xiaojun Qi,
+A hybrid deep learning and NDVI threshold approach for high-resolution urban greenspace classification,
+Urban Forestry & Urban Greening,
+Volume 118,
+2026,
+129332,
+ISSN 1618-8667,
+https://doi.org/10.1016/j.ufug.2026.129332.
 
 ## References
 
