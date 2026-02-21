@@ -35,7 +35,49 @@ cd VegClassify
 conda env create -f vegclassify_environment.yaml
 ```
 ## Usage
+### Initialize workspace
+Run the following command to initialize your workspace. Make sure there is enough space on your hard drive if you are 
+working on large image files.
+```
+    python -m smartndvi init -wd <your-working-directory>
+```
+The workspace structure is
+```commandline
+├─cache
+│  ├─ground_truth_image
+│  ├─ground_truth_mask
+│  └─naip_sample_mask
+├─model
+│  ├─checkpoint
+│  └─config
+└─output
+    ├─land_cover_maps
+    ├─optimal_ndvi
+    └─vegetation_mask
+```
+Copy the trained deep learning model file (.pth) to "./model/checkpoint".
+Copy the configuration file "fcn_aux-hr48_256x512_80k_singlegreen.py" to "./model/config". 
 
+### Process a single image
+
+To process a single image file, run the following command:
+~~~  
+    python -m smartndvi optimize <input-image-fully-qualified-path> -lc <kappa | accuracy>
+~~~
+You can specify "kappa" or "accuracy" as the metrics for searching optimal NDVI threshold.
+
+### Process a batch of images
+
+To process all the images in a folder, run the following command:
+~~~
+    python -m smartndvi optimize <input-image-directory> -lc <kappa | accuracy>
+~~~
+You can specify "kappa" or "accuracy" as the metrics for searching optimal NDVI threshold.
+
+### Check VegClassify version
+~~~
+    python -m smartndvi --version
+~~~
 ## Example Output
 
 ## How to cite
