@@ -1,4 +1,119 @@
-# GreenSpaceRecognizer
+# VegClassify
+
+A geospatial analysis tool that automatically determines the optimal NDVI threshold for vegetation classification in 
+NAIP imagery using a deep learning–based reference model.
+
+The system leverages a trained deep learning model to generate pixel-wise vegetation classifications from RGB imagery. 
+These predictions are treated as pseudo–ground truth and are used to compute the NDVI threshold that best aligns 
+traditional index-based classification with model-based semantic segmentation.
+
+## Overview
+
+Vegetation classification is commonly performed using the Normalized Difference Vegetation Index (NDVI). 
+However, selecting an appropriate NDVI threshold is often heuristic and scene-dependent.
+
+This tool automates threshold selection by:
+
+1. Running a deep learning model on NAIP RGB imagery to produce vegetation masks. 
+2. Computing NDVI for the same imagery. 
+3. Sweeping candidate NDVI thresholds. 
+4. Comparing NDVI-based classifications with the deep learning output. 
+5. Selecting the threshold that maximizes agreement between the two methods.
+
+The result is a data-driven NDVI threshold optimized for the specific scene.
+
+## Features
+1. Automatic NDVI threshold selection 
+2. GPU-accelerated deep learning inference 
+3. Scene-specific optimization 
+4. Pixel-level evaluation
+
+## Model Design
+<img title="Model Design" alt="Model design diagram" src="/doc/figures/VegClassify.svg">
+
+## Installation
+```commandline
+git clone https://github.com/Anson008/VegClassify.git
+cd VegClassify
+conda env create -f vegclassify_environment.yaml
+```
+## Usage
+### Initialize workspace
+Run the following command to initialize your workspace. Make sure there is enough space on your hard drive if you are 
+working on large image files.
+```
+    python -m smartndvi init -wd <your-working-directory>
+```
+The workspace structure is
+```
+├─cache
+│  ├─ground_truth_image
+│  ├─ground_truth_mask
+│  └─naip_sample_mask
+├─model
+│  ├─checkpoint
+│  └─config
+└─output
+    ├─land_cover_maps
+    ├─optimal_ndvi
+    └─vegetation_mask
+```
+Copy the trained deep learning model file (.pth) to "./model/checkpoint".
+Copy the configuration file "fcn_aux-hr48_256x512_80k_singlegreen.py" to "./model/config". 
+
+### Process a single image
+
+To process a single image file, run the following command:
+~~~  
+    python -m smartndvi optimize <input-image-fully-qualified-path> -lc <kappa | accuracy>
+~~~
+You can specify "kappa" or "accuracy" as the metrics for searching optimal NDVI threshold.
+
+### Process a batch of images
+
+To process all the images in a folder, run the following command:
+~~~
+    python -m smartndvi optimize <input-image-directory> -lc <kappa | accuracy>
+~~~
+You can specify "kappa" or "accuracy" as the metrics for searching optimal NDVI threshold.
+
+### Check VegClassify version
+~~~
+    python -m smartndvi --version
+~~~
+
+## Example Output
+The output vegetation masks are saved as .tif files and <strong>preserve the original geospatial metadata of the NAIP 
+imagery </strong>.
+Pixels classified as vegetation are assigned a value of 1, while all other pixels are assigned a value of 0.
+### Example land cover maps
+<img title="Land Cover Map 1" alt="Example land cover map" src="/doc/figures/Example_Output_1.png">
+<img title="Land Cover Map 2" alt="Example land cover map" src="/doc/figures/Example_Output_2.png">
+
+### Example optimal NDVI data file (.json)
+```json
+{
+    "kappa": {
+        "metrics": 0.7421200137308054,
+        "optimal_ndvi": 0.08
+    },
+    "accuracy": {
+        "metrics": 0.872037037037037,
+        "optimal_ndvi": 0.1
+    }
+}
+```
+
+## How to cite
+
+Huaqing Wang, Xingchen Zhao, Simin Gholami, Christopher McGinty, Brent Chamberlain, Xiaojun Qi,
+A hybrid deep learning and NDVI threshold approach for high-resolution urban greenspace classification,
+Urban Forestry & Urban Greening,
+Volume 118,
+2026,
+129332,
+ISSN 1618-8667,
+https://doi.org/10.1016/j.ufug.2026.129332.
 
 ## References
 
