@@ -28,6 +28,9 @@ The result is a data-driven NDVI threshold optimized for the specific scene.
 3. Scene-specific optimization 
 4. Pixel-level evaluation
 
+## Model Design
+<img title="Model Design" alt="Model design diagram" src="/doc/figures/VegClassify.svg">
+
 ## Installation
 ```commandline
 git clone https://github.com/Anson008/VegClassify.git
@@ -42,7 +45,7 @@ working on large image files.
     python -m smartndvi init -wd <your-working-directory>
 ```
 The workspace structure is
-```commandline
+```
 ├─cache
 │  ├─ground_truth_image
 │  ├─ground_truth_mask
@@ -78,7 +81,28 @@ You can specify "kappa" or "accuracy" as the metrics for searching optimal NDVI 
 ~~~
     python -m smartndvi --version
 ~~~
+
 ## Example Output
+The output vegetation masks are saved as .tif files and <strong>preserve the original geospatial metadata of the NAIP 
+imagery </strong>.
+Pixels classified as vegetation are assigned a value of 1, while all other pixels are assigned a value of 0.
+### Example land cover maps
+<img title="Land Cover Map 1" alt="Example land cover map" src="/doc/figures/Example_Output_1.png">
+<img title="Land Cover Map 2" alt="Example land cover map" src="/doc/figures/Example_Output_2.png">
+
+### Example optimal NDVI data file (.json)
+```json
+{
+    "kappa": {
+        "metrics": 0.7421200137308054,
+        "optimal_ndvi": 0.08
+    },
+    "accuracy": {
+        "metrics": 0.872037037037037,
+        "optimal_ndvi": 0.1
+    }
+}
+```
 
 ## How to cite
 
