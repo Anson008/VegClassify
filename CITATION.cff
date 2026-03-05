@@ -1,0 +1,58 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite our paper below."
+title: "Hybrid Deep Learning + NDVI Threshold for High-Resolution Urban Greenspace Classification (Code)"
+abstract: >
+  Reference implementation for a hybrid deep learning and NDVI-threshold
+  approach to high-resolution urban greenspace classification. This repository
+  accompanies the Urban Forestry & Urban Greening article listed under
+  'preferred-citation' and is released for noncommercial academic use.
+type: software
+version: "1.0.0"
+date-released: 2026-03-05
+
+authors:
+  - family-names: Wang
+    given-names: Huaqing
+  - family-names: Zhao
+    given-names: Xingchen
+  - family-names: Gholami
+    given-names: Simin
+  - family-names: McGinty
+    given-names: Christopher
+  - family-names: Chamberlain
+    given-names: Brent
+  - family-names: Qi
+    given-names: Xiaojun
+
+repository-code: "https://github.com/YourOrgOrUser/YourRepoName"
+license: "PolyForm-Noncommercial-1.0.0"
+keywords:
+  - urban greenspace
+  - land cover classification
+  - NDVI
+  - deep learning
+  - remote sensing
+
+preferred-citation:
+  type: article
+  title: "A hybrid deep learning and NDVI threshold approach for high-resolution urban greenspace classification"
+  authors:
+    - family-names: Wang
+      given-names: Huaqing
+    - family-names: Zhao
+      given-names: Xingchen
+    - family-names: Gholami
+      given-names: Simin
+    - family-names: McGinty
+      given-names: Christopher
+    - family-names: Chamberlain
+      given-names: Brent
+    - family-names: Qi
+      given-names: Xiaojun
+  journal: "Urban Forestry & Urban Greening"
+  volume: "118"
+  year: 2026
+  start: "129332"     # article number
+  issn: "1618-8667"
+  doi: "10.1016/j.ufug.2026.129332"
+  url: "https://www.sciencedirect.com/science/article/pii/S1618866726000725"
