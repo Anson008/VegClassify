@@ -1,5 +1,4 @@
 # VegClassify
-![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 
 A geospatial analysis tool that automatically determines the optimal NDVI threshold for vegetation classification in 
 NAIP imagery using a deep learning–based reference model.
@@ -118,7 +117,10 @@ https://doi.org/10.1016/j.ufug.2026.129332.
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under PolyForm Noncommercial License 1.0.0.
+
+## Contact
+Huaqing Wang: huaqing.wang@usu.edu
 
 ## References
 
