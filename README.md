@@ -7,7 +7,7 @@ The system leverages a trained deep learning model to generate pixel-wise vegeta
 These predictions are treated as pseudo–ground truth and are used to compute the NDVI threshold that best aligns 
 traditional index-based classification with model-based semantic segmentation.
 
-A GUI application of VegClassify is available here: https://doi.org/10.26078/X0GG-0969. See VegClassify_SoftwareTutorial.docx for instructions.
+A **GUI application of VegClassify** is available here: https://doi.org/10.26078/X0GG-0969. See **VegClassify_SoftwareTutorial.pdf** for instructions.
 
 ## Overview
 
